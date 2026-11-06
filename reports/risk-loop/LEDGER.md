@@ -130,3 +130,12 @@ A5 (`argus-v1/eval/audit.md`): **one look, cumulative 7**. Validation 4,408 rows
 - **Label shuffle FAIL: 0.748 / 0.771 / 0.798** (expected ≈0.5) — source/family base-rate shortcut (October positive rate 5.5% vs November 0.56%, source trivially decodable). Pooled scores invalid; only per-source scores meaningful.
 - Pre-registered rule picked L23-PCA20-C1 (within-tool 0.548 vs 0.545 runner-up = noise); G0 threshold non-discriminative (all 21 pass). **Verdict: negative / PROVISIONAL — no structure fixed.** Argus-V1 default stays L16/PCA-10 until human labels. Monitor: rules 1–5 PASS, 6 FAIL (shuffle), 7 WARN.
 - Fixes for next run: per-source scoring and shuffle within source x family; scaler fit inside folds for length+step baseline; within-tool AUROC per fold.
+
+## 2026-11-07 — Argus-V1 source-shortcut correction CV (train only)
+- Script `experiments/risk_loop/argus_v1_source_balanced_cv.py`; output `argus-v1/source-balanced-cv/`; monitor `argus-v1/monitor/source-balanced-cv.md`. Argus-V1 default (L16 max, PCA-10, C=1), same data as structure CV. CPU 83 s, no val/test, datasets read-only.
+- | variant | shuffle-in-source | nov AUROC | oct AUROC | within-same-tool (per fold) | score→source AUROC |
+  | base | 0.65–0.69 | 0.764 | 0.652 | 0.557 | 0.754 |
+  | balanced (source×class weights) | 0.48–0.50 | 0.756 | 0.741 | 0.502 | 0.539 |
+  | demeaned (per-source mean) | 0.46–0.50 | 0.748 | 0.675 | 0.455 | 0.492 |
+  | both | 0.46–0.54 | 0.747 | 0.725 | 0.490 | 0.488 |
+- Source shortcut removed by balanced weights (deployable; demeaning needs source at scoring). Per-source AUROC stays above length+step (nov 0.591) but within-same-tool ≈ 0.5 → remaining signal = tool identity. **Negative: no within-tool step signal with current labels.** Proposal: Argus-V1 training uses source×class balanced weights when mixing sources. Monitor: items 1–3 PASS, 4–5 WARN, no invalidating issue.
