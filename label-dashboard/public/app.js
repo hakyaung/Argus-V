@@ -1,7 +1,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
-  const state = { config: null, session: null, user: null, authorName: "", teamKey: "", tasks: [], summary: {}, current: null, labels: [], filter: "", status: "all", heartbeat: null, hfReadOnly: false, previewQueue: null, previewUnit: null };
-  const statuses = { queued: "대기", in_progress: "작업 중", completed: "완료", needs_adjudication: "판정 보류" };
+  const state = { config: null, session: null, user: null, authorName: "", teamKey: "", clientId: "", tabId: "", tasks: [], summary: {}, current: null, labels: [], filter: "", status: "all", heartbeat: null, hfReadOnly: false, previewQueue: null, previewUnit: null };
+  const statuses = { queued: "대기", in_progress: "작업 중", completed: "완료", revision_recovery: "수정 복구 필요", needs_adjudication: "판정 보류" };
   const axes = [
     ["gold_violation", "정책 위반 시도"],
     ["violation_executed", "실제 위반 실행"],
@@ -31,7 +31,7 @@
     ["setup-state", "author-view", "dashboard-view"].forEach((id) => $(id).classList.toggle("hidden", id !== view));
   }
   async function api(path, options = {}) {
-    const response = await fetch(path, { ...options, headers: { "content-type": "application/json", ...(state.authorName ? { "x-author-name": encodeURIComponent(state.authorName) } : {}), ...(state.teamKey ? { "x-team-access-key": state.teamKey } : {}), ...(options.headers || {}) } });
+    const response = await fetch(path, { ...options, headers: { "content-type": "application/json", ...(state.authorName ? { "x-author-name": encodeURIComponent(state.authorName) } : {}), ...(state.teamKey ? { "x-team-access-key": state.teamKey } : {}), ...(state.clientId ? { "x-reviewer-client-id": state.clientId } : {}), ...(state.tabId ? { "x-reviewer-tab-id": state.tabId } : {}), ...(options.headers || {}) } });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || `요청 오류 (${response.status})`);
     return result;
@@ -73,6 +73,17 @@
 
   async function start() {
     void loadOctoberReference();
+    state.clientId = localStorage.getItem("argus-label-client-id") || "";
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(state.clientId)) {
+      state.clientId = globalThis.crypto?.randomUUID?.() || "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16);
+      });
+      localStorage.setItem("argus-label-client-id", state.clientId);
+    }
+    // Keep the tab ID in memory only. sessionStorage may be cloned when a browser tab is duplicated.
+    state.tabId = globalThis.crypto?.randomUUID?.() || "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16);
+    });
     state.authorName = localStorage.getItem("argus-label-author") || "";
     state.teamKey = sessionStorage.getItem("argus-label-team-key") || "";
     if (state.authorName) state.user = { displayName: state.authorName };
@@ -138,7 +149,11 @@
     list.innerHTML = filtered.map((t) => {
       const author = t.status === "in_progress" ? t.assigned_author_name : t.last_labeler_name;
       const dispositionLabel = t.review_disposition === "quarantined" ? "격리 · 조사 필요" : t.review_disposition === "excluded" ? "사용 제외" : null;
-      return `<article class="queue-item ${state.current?.unit_id === t.unit_id ? "current" : ""}" data-unit="${escapeAttr(t.unit_id)}"><div><div class="queue-id">${escapeHtml(t.scenario_id)} · ${escapeHtml(t.condition)} · s${t.seed}</div><div class="queue-meta">${escapeHtml(t.unit_id)}${author ? ` · 작성자 ${escapeHtml(author)}` : ""}${dispositionLabel ? `<br/>${escapeHtml(dispositionLabel)} · ${escapeHtml(t.disposition_note || "")}` : ""}</div></div><div class="queue-controls"><span class="state ${dispositionLabel ? "state-needs_adjudication" : `state-${t.status}`}" title="${escapeAttr(dispositionLabel || statuses[t.status] || t.status)}">${escapeHtml(dispositionLabel || statuses[t.status] || t.status)}</span><button class="preview-button" type="button" data-preview-unit="${escapeAttr(t.unit_id)}">미리보기</button></div></article>`;
+      const actionButton = t.resume_available
+        ? `<button class="task-action-button" type="button" data-claim-unit="${escapeAttr(t.unit_id)}" data-claim-mode="resume" data-resume-takeover="${t.resume_requires_takeover ? "true" : "false"}">${t.resume_requires_takeover ? "기존 작업 이어받기" : "내 작업 이어하기"}</button>`
+        : t.can_edit_completed
+          ? `<button class="task-action-button" type="button" data-claim-unit="${escapeAttr(t.unit_id)}" data-claim-mode="revise" data-revision-recovery="${t.revision_needs_recovery ? "true" : "false"}">${t.revision_needs_recovery ? "미완료 수정 초안 이어받기" : "완료 라벨 수정"}</button>` : "";
+      return `<article class="queue-item ${state.current?.unit_id === t.unit_id ? "current" : ""}" data-unit="${escapeAttr(t.unit_id)}"><div><div class="queue-id">${escapeHtml(t.scenario_id)} · ${escapeHtml(t.condition)} · s${t.seed}</div><div class="queue-meta">${escapeHtml(t.unit_id)}${author ? ` · 작성자 ${escapeHtml(author)}` : ""}${t.revision_needs_recovery ? `<br/>미완료 수정 초안 · 이전 작성자 ${escapeHtml(t.revision_owner_name || "알 수 없음")}` : ""}${dispositionLabel ? `<br/>${escapeHtml(dispositionLabel)} · ${escapeHtml(t.disposition_note || "")}` : ""}</div></div><div class="queue-controls"><span class="state ${dispositionLabel ? "state-needs_adjudication" : `state-${t.status}`}" title="${escapeAttr(dispositionLabel || statuses[t.status] || t.status)}">${escapeHtml(dispositionLabel || statuses[t.status] || t.status)}</span><button class="preview-button" type="button" data-preview-unit="${escapeAttr(t.unit_id)}">미리보기</button>${actionButton}</div></article>`;
     }).join("");
   }
   async function previewUnit(unit_id) {
@@ -179,9 +194,16 @@
             policy_label: json.policy_label ?? json.original_policy_label ?? null, evidence: json })) };
       } else data = await api("/api/preview", { method: "POST", body: JSON.stringify({ unit_id }) });
       state.previewUnit = unit_id;
-      const canClaim = !state.hfReadOnly && data.review_disposition === "normal" && ["queued", "needs_adjudication"].includes(data.status);
+      const resumeAvailable = typeof data.resume_available === "boolean" ? data.resume_available : task.resume_available;
+      const resumeRequiresTakeover = typeof data.resume_requires_takeover === "boolean" ? data.resume_requires_takeover : task.resume_requires_takeover;
+      const revisionNeedsRecovery = typeof data.revision_needs_recovery === "boolean" ? data.revision_needs_recovery : task.revision_needs_recovery;
+      const claimMode = resumeAvailable ? "resume" : (data.status === "completed" || data.status === "revision_recovery") ? "revise" : "new";
+      const canClaim = !state.hfReadOnly && data.review_disposition === "normal" && (resumeAvailable || ["queued", "needs_adjudication", "completed", "revision_recovery"].includes(data.status));
       $("preview-claim").disabled = !canClaim;
-      $("preview-claim").textContent = canClaim ? "이 rollout 맡기" : state.hfReadOnly ? "미리보기 전용 · Vercel에서 작업 배정" : data.status === "in_progress" ? `${data.assigned_author_name || "다른 팀원"} 작업 중` : "작업할 수 없음";
+      $("preview-claim").dataset.claimMode = claimMode;
+      $("preview-claim").dataset.resumeTakeover = resumeRequiresTakeover ? "true" : "false";
+      $("preview-claim").dataset.revisionRecovery = revisionNeedsRecovery ? "true" : "false";
+      $("preview-claim").textContent = canClaim ? claimMode === "resume" ? (resumeRequiresTakeover ? "기존 작업 이어받기" : "내 작업 이어하기") : claimMode === "revise" ? (revisionNeedsRecovery ? "미완료 수정 초안 이어받기" : "완료 라벨 수정") : "이 rollout 맡기" : state.hfReadOnly ? "미리보기 전용 · Vercel에서 작업 배정" : data.status === "in_progress" ? `${data.assigned_author_name || "다른 팀원"} 작업 중` : "작업할 수 없음";
       content.innerHTML = `<div class="preview-meta">${escapeHtml(data.scenario_id)} · ${escapeHtml(data.condition)} · seed ${data.seed} · ${escapeHtml(data.unit_id)}<br/>HF source revision · ${escapeHtml(data.source_revision || "미기록")} · ${data.step_count}개 행동</div><div class="preview-context"><h3>Task</h3><p>${escapeHtml(data.task)}</p><h3>Trusted policy</h3><p>${escapeHtml(data.trusted_policy)}</p></div><h3 class="preview-step-heading">행동 자료 미리보기</h3><div class="preview-steps">${(data.steps || []).map((step) => `<article class="preview-step"><header><strong>STEP ${String(step.step_index).padStart(3,"0")}${step.kind ? ` · ${escapeHtml(step.kind)}` : ""}</strong><span>${escapeHtml(step.action_id || "action ID 없음")}</span></header>${step.policy_label != null ? `<div class="source-label">HF 제안 라벨 참고 · ${escapeHtml(step.policy_label)}</div>` : ""}<p>${escapeHtml(step.summary || "요약 텍스트 없음")}</p><details><summary>원본 step JSON 보기</summary><pre>${escapeHtml(JSON.stringify(step.evidence,null,2))}</pre></details></article>`).join("") || '<div class="empty-state">step 자료가 없습니다.</div>'}</div>`;
     } catch (error) { content.innerHTML = `<div class="empty-state">미리보기를 불러오지 못했습니다: ${escapeHtml(error.message)}</div>`; }
   }
@@ -198,16 +220,29 @@
     } catch (error) { toast(error.message); }
     finally { button.disabled = false; button.textContent = "다음 작업 배정받기 →"; }
   }
-  async function claimSelected(unit_id) {
+  async function claimSelected(unit_id, mode = "new", confirmTakeover = false) {
     if (state.hfReadOnly) { toast("HF 원본 목록은 읽기 전용입니다. 작업 저장에는 Vercel API와 HF_TOKEN 설정이 필요합니다."); return; }
     try {
-      const data = await api("/api/claim", { method: "POST", body: JSON.stringify({ unit_id }) });
+      const data = await api("/api/claim", { method: "POST", body: JSON.stringify({ unit_id, mode, confirm_takeover: confirmTakeover }) });
       if (!data.task) { toast("이미 다른 팀원이 예약했거나 작업 가능한 상태가 아닙니다."); await loadDashboard(); return false; }
       state.current = data; state.labels = data.labels || []; state.trajectoryLabel = data.trajectory_label || null;
       renderTask(); startHeartbeat();
       void loadDashboard().catch((error) => toast(`작업은 배정됐지만 목록 갱신에 실패했습니다: ${error.message}`));
       return true;
-    } catch (error) { toast(error.message); return false; }
+    } catch (error) {
+      if (mode === "resume" && error.message === "RESUME_REQUIRES_CONFIRMATION") {
+        try { await loadDashboard(); }
+        catch (refreshError) { toast(`작업 소유권을 다시 확인하지 못했습니다: ${refreshError.message}`); return false; }
+        const refreshed = state.tasks.find((task) => task.unit_id === unit_id);
+        if (refreshed?.resume_available && refreshed.resume_requires_takeover
+          && window.confirm("기존 작업 소유자가 바뀌었습니다. 현재 같은 작성자 이름으로 열린 작업을 이어받으면 이전 세션에서는 더 이상 저장할 수 없습니다. 계속할까요?")) {
+          return claimSelected(unit_id, "resume", true);
+        }
+        toast("작업 소유자가 바뀌었습니다. 최신 작업 목록을 불러왔습니다.");
+        return false;
+      }
+      toast(error.message); return false;
+    }
   }
   async function startHeartbeat() {
     clearInterval(state.heartbeat);
@@ -267,7 +302,7 @@
     $("trajectory-evidence").onchange = (e) => { state.trajectoryDraft.evidence_action_id = e.target.value; };
     $("trajectory-hold").onchange = (e) => { state.trajectoryDraft.review_status = e.target.checked ? "hold" : "draft"; };
     $("trajectory-notes").oninput = (e) => { state.trajectoryDraft.notes = e.target.value; };
-    $("save-draft").onclick = () => saveLabels(false); $("submit-task").onclick = () => saveLabels(true); $("release-task").onclick = releaseTask;
+    $("save-draft").onclick = () => saveLabels(false); $("submit-task").onclick = () => saveLabels(true); $("release-task").textContent = state.current.mode === "revise" ? "수정 취소" : "반납"; $("release-task").onclick = releaseTask;
     $("quarantine-task").onclick = () => disposeTask("quarantined"); $("exclude-task").onclick = () => disposeTask("excluded");
   }
   function renderAction(ix, json, path) {
@@ -364,7 +399,7 @@
     button.disabled = true;
     button.textContent = "라벨 sidecar 구성 중…";
     try {
-      const samples = []; const pendingReviews = new Map(); const trajectory_reviews = []; const label_revision_history = []; const quarantined_trajectories = []; const excluded_reviews = []; const revisions = new Set();
+      const samples = []; const pendingReviews = new Map(); const trajectory_reviews = []; const label_revision_history = []; const trajectory_revision_history = []; const quarantined_trajectories = []; const excluded_reviews = []; const revisions = new Set();
       let cursor = ""; let snapshotAt = ""; let hasMore = true;
       while (hasMore) {
         const query = new URLSearchParams();
@@ -374,6 +409,7 @@
         samples.push(...(page.samples || [])); trajectory_reviews.push(...(page.trajectory_reviews || []));
         (page.pending_reviews || []).forEach((row) => pendingReviews.set(`${row.unit_id}:${row.step_index}`, row));
         label_revision_history.push(...(page.label_revision_history || []));
+        trajectory_revision_history.push(...(page.trajectory_revision_history || []));
         quarantined_trajectories.push(...(page.quarantined_trajectories || []));
         excluded_reviews.push(...(page.excluded_reviews || []));
         (page.source_revisions || []).forEach((revision) => revisions.add(revision));
@@ -432,6 +468,7 @@
         trajectory_violation_evidence,
         trajectory_reviews,
         label_revision_history,
+        trajectory_revision_history,
         quarantined_trajectories,
         excluded_reviews,
         review_progress: {
@@ -478,8 +515,14 @@
   }
   async function releaseTask() {
     if (!state.current) return;
-    try { const saved = await saveLabels(false); if (!saved) return; await api("/api/release", { method: "POST", body: JSON.stringify({ unit_id: state.current.task.unit_id, lease_token: state.current.task.lease_token }) }); clearInterval(state.heartbeat); state.current = null; $("task-work").classList.add("hidden"); $("task-empty").classList.remove("hidden"); await loadDashboard(); toast("작업을 반납했습니다."); }
-    catch (error) { toast(error.message); }
+    const cancelRevision = state.current.mode === "revise";
+    try {
+      if (!cancelRevision) { const saved = await saveLabels(false); if (!saved) return false; }
+      const result = await api("/api/release", { method: "POST", body: JSON.stringify({ unit_id: state.current.task.unit_id, lease_token: state.current.task.lease_token }) });
+      clearInterval(state.heartbeat); state.current = null; $("task-work").classList.add("hidden"); $("task-empty").classList.remove("hidden"); await loadDashboard();
+      toast(result.revision_canceled ? "수정을 취소했습니다. 기존 확정 라벨은 유지됩니다." : "작업을 반납했습니다."); return true;
+    }
+    catch (error) { toast(error.message); return false; }
   }
   async function disposeTask(disposition) {
     const note = $("disposition-note").value.trim();
@@ -519,7 +562,10 @@
     if (state.current) { toast("진행 중인 작업을 반납한 뒤 이름을 바꿔 주세요."); return; }
     $("author-name").value = state.authorName; $("team-access-key").value = state.teamKey; $("author-error").textContent = ""; show("author-view");
   };
-  $("signout").onclick = () => { clearInterval(state.heartbeat); localStorage.removeItem("argus-label-author"); sessionStorage.removeItem("argus-label-team-key"); state.teamKey = ""; state.user = null; state.authorName = ""; state.current = null; setUserChrome(); show("author-view"); };
+  $("signout").onclick = async () => {
+    if (state.current && !(await releaseTask())) return;
+    clearInterval(state.heartbeat); localStorage.removeItem("argus-label-author"); sessionStorage.removeItem("argus-label-team-key"); state.teamKey = ""; state.user = null; state.authorName = ""; state.current = null; setUserChrome(); show("author-view");
+  };
   $("claim-next").onclick = claimNext;
   $("refresh").onclick = () => (state.hfReadOnly ? startHFQueue() : loadDashboard().catch((e) => toast(e.message)));
   $("download-sidecar").onclick = downloadSidecar;
@@ -527,6 +573,16 @@
   $("filter-scenario").oninput = (e) => { state.filter = e.target.value; renderQueue(); };
   $("filter-status").onchange = (e) => { state.status = e.target.value; renderQueue(); };
   $("queue-list").addEventListener("click", async (event) => {
+    const claim = event.target.closest("[data-claim-unit]");
+    if (claim) {
+      const mode = claim.dataset.claimMode || "new";
+      if (claim.dataset.resumeTakeover === "true" && !window.confirm("기존 작업을 이어받습니다. 이전 탭이나 기기에서 이 작업은 더 이상 저장할 수 없습니다. 같은 이름을 쓰는 다른 사람이 작업 중인 건 아닌지 확인한 뒤 계속하세요.")) return;
+      if (claim.dataset.revisionRecovery === "true" && !window.confirm("이전 작성자가 남긴 미완료 수정 초안을 이어받습니다. 이전 탭의 수정은 중단되며, 초안을 검토한 뒤 제출해야 HF 확정 라벨이 바뀝니다. 계속할까요?")) return;
+      claim.disabled = true; claim.textContent = mode === "resume" ? "이어받는 중…" : "수정 예약 중…";
+      const claimed = await claimSelected(claim.dataset.claimUnit, mode, claim.dataset.resumeTakeover === "true");
+      if (!claimed && claim.isConnected) { claim.disabled = false; claim.textContent = claim.dataset.resumeTakeover === "true" ? "기존 작업 이어받기" : claim.dataset.revisionRecovery === "true" ? "미완료 수정 초안 이어받기" : mode === "resume" ? "내 작업 이어하기" : "완료 라벨 수정"; }
+      return;
+    }
     const preview = event.target.closest("[data-preview-unit]");
     const row = event.target.closest("[data-unit]");
     if (preview || row) { await previewUnit(preview?.dataset.previewUnit || row.dataset.unit); return; }
@@ -536,7 +592,10 @@
   $("preview-claim").onclick = async () => {
     const unit_id = state.previewUnit;
     if (!unit_id) return;
-    if (await claimSelected(unit_id)) $("preview-dialog").close();
+    const button = $("preview-claim");
+    if (button.dataset.resumeTakeover === "true" && !window.confirm("기존 작업을 이어받습니다. 이전 탭이나 기기에서 이 작업은 더 이상 저장할 수 없습니다. 같은 이름을 쓰는 다른 사람이 작업 중인 건 아닌지 확인한 뒤 계속하세요.")) return;
+    if (button.dataset.revisionRecovery === "true" && !window.confirm("이전 작성자가 남긴 미완료 수정 초안을 이어받습니다. 이전 탭의 수정은 중단되며, 초안을 검토한 뒤 제출해야 HF 확정 라벨이 바뀝니다. 계속할까요?")) return;
+    if (await claimSelected(unit_id, button.dataset.claimMode || "new", button.dataset.resumeTakeover === "true")) $("preview-dialog").close();
   };
   start();
 })();

@@ -25,7 +25,15 @@ async function requireAuthor(req) {
   if (!displayName || displayName.length > 80 || /[\u0000-\u001f\u007f]/.test(displayName)) {
     throw Object.assign(new Error("AUTHOR_NAME_REQUIRED"), { status: 428 });
   }
-  return { displayName };
+  const clientId = String(req.headers["x-reviewer-client-id"] || "");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clientId)) {
+    throw Object.assign(new Error("REVIEWER_CLIENT_ID_REQUIRED"), { status: 428 });
+  }
+  const tabId = String(req.headers["x-reviewer-tab-id"] || "");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tabId)) {
+    throw Object.assign(new Error("REVIEWER_TAB_ID_REQUIRED"), { status: 428 });
+  }
+  return { displayName, clientId, tabId };
 }
 
 function handlerErrors(res, error) {

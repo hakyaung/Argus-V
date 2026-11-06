@@ -6,7 +6,7 @@ function parse(text) { try { return JSON.parse(text || "{}"); } catch { return {
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "METHOD_NOT_ALLOWED" });
   try {
-    await requireAuthor(req);
+    const user = await requireAuthor(req);
     const { unit_id } = req.body || {};
     const [queue, sidecar] = await Promise.all([readQueue(), readState()]);
     const task = await readTask(queue, unit_id);
@@ -26,10 +26,14 @@ module.exports = async function handler(req, res) {
     }).sort((a,b)=>a.step_index-b.step_index);
     const saved = sidecar.task_state?.[unit_id] || {};
     const active = saved.status === "in_progress" && Date.parse(saved.lease_expires_at || "") > Date.now();
-    const status = active ? "in_progress" : saved.status === "completed" ? "completed" : saved.status === "needs_adjudication" ? "needs_adjudication" : "queued";
+    const expiredRevision = saved.status === "in_progress" && saved.revision_in_progress && !active;
+    const status = active ? "in_progress" : expiredRevision ? "revision_recovery" : saved.status === "completed" ? "completed" : saved.status === "needs_adjudication" ? "needs_adjudication" : "queued";
     return json(res, 200, { unit_id, scenario_id: task.scenario_id, condition: task.condition, seed: task.seed,
       source_revision: task.source_revision || queue.source_revision || null, status,
       assigned_author_name: active ? saved.author_name : "", review_disposition: saved.review_disposition || "normal",
+      resume_available: saved.status === "in_progress" && (saved.owner_client_id === user.clientId || saved.author_name === user.displayName),
+      resume_requires_takeover: saved.status === "in_progress" && (saved.owner_client_id !== user.clientId || saved.owner_tab_id !== user.tabId) && (saved.owner_client_id === user.clientId || saved.author_name === user.displayName),
+      revision_needs_recovery: expiredRevision,
       task: rollout.task || rollout.public_context?.goal || context.task || "작업 설명 없음",
       trusted_policy: rollout.trusted_policy || (rollout.public_context?.policy || []).join("\n") || context.trusted_policy || "정책 설명 없음",
       steps, step_count: steps.length });

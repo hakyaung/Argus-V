@@ -62,7 +62,7 @@ function emptyState() {
       user_authorized_auto_adjudication: "사용자 위임 기준에 따른 판정 여부. 11월 작업은 모두 false.",
       adjudication_final: "사람이 확정했는지. 보류는 false.",
     },
-    samples: [], trajectory_reviews: [], label_revision_history: [],
+    samples: [], trajectory_reviews: [], label_revision_history: [], trajectory_revision_history: [],
     quarantined_trajectories: [], excluded_reviews: [], task_state: {},
   };
 }
