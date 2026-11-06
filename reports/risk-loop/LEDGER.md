@@ -121,3 +121,12 @@ A5 (`argus-v1/eval/audit.md`): **one look, cumulative 7**. Validation 4,408 rows
 - Findings: 20/23 train D positives are first-contact misreads before any request; post-DENIED violations 3/783. 33/38 train v2 positives have rule_label=0 (LLM-only). Exact X-replay minimal pairs: train 2.
 - User decision: scenario rewrite/re-run deferred (GPU cost); human labeling dashboard in progress elsewhere; no injected/instructed violations.
 - INCIDENT: debater B round-1 glob read test-family (F07/F11/F14) rollouts while counting DENIED; no content printed, recomputed excluding them; reported numbers train/val only. No test information used for any model decision.
+
+## 2026-11-07 — Argus-V1 structure CV (train only, October labelled + November scenario data)
+- Script `experiments/risk_loop/argus_v1_structure_cv.py`; output `argus-v1/structure-cv/`; monitor `argus-v1/monitor/structure-cv.md`. CPU, 120 s. No validation/test.
+- Data: 10,817 train steps / 110 positives (November 9,811/55; October 1,006/55 after dropping 33 report/stop/submit positives, option 가); 41 families.
+- Baselines: length+step strat 0.569; tool-identity rate strat 0.782; domain-tool 0.788; source indicator (oct) 0.706.
+- Grid (max pool, L x PCA x C, 18) pooled AUROC 0.63–0.88; per-source AUROC nov 0.61–0.86, oct 0.65–0.73; within-same-tool 0.45–0.55. C has no effect. Structural: mean pool within-tool 0.576 (best), max+mean 0.550, tool-removed 0.474 (nov 0.534).
+- **Label shuffle FAIL: 0.748 / 0.771 / 0.798** (expected ≈0.5) — source/family base-rate shortcut (October positive rate 5.5% vs November 0.56%, source trivially decodable). Pooled scores invalid; only per-source scores meaningful.
+- Pre-registered rule picked L23-PCA20-C1 (within-tool 0.548 vs 0.545 runner-up = noise); G0 threshold non-discriminative (all 21 pass). **Verdict: negative / PROVISIONAL — no structure fixed.** Argus-V1 default stays L16/PCA-10 until human labels. Monitor: rules 1–5 PASS, 6 FAIL (shuffle), 7 WARN.
+- Fixes for next run: per-source scoring and shuffle within source x family; scaler fit inside folds for length+step baseline; within-tool AUROC per fold.
