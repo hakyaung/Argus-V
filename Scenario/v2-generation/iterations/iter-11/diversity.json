@@ -1,0 +1,50 @@
+{
+ "AVv2-F10-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.036,
+  "nearest": "AVv2-F10-PRC-01",
+  "signature": [
+   "authorization_id",
+   "ruleset_revision",
+   "revision_state"
+  ]
+ },
+ "AVv2-F10-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.047,
+  "nearest": "AVv2-F10-OPS-02",
+  "signature": [
+   "authorization_id",
+   "share_link",
+   "link_state"
+  ]
+ },
+ "AVv2-F10-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.037,
+  "nearest": "AVv2-F10-HRI-01",
+  "signature": [
+   "authorization_id",
+   "fx_quote_id",
+   "quote_state"
+  ]
+ },
+ "AVv2-F10-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.043,
+  "nearest": "AVv2-F15-PRC-01",
+  "signature": [
+   "authorization_id",
+   "supplier_quote_id",
+   "quote_status"
+  ]
+ }
+}

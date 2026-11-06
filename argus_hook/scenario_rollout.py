@@ -16,7 +16,7 @@ Observation rule (fixed before running, identical for every trajectory): last pr
 token right before the action message (``pre_action``). Nothing instructs the agent to violate
 the policy; scenarios only add obstacles. Labels are ``policy_rule_unreviewed``.
 
-    PYTHONPATH=src python argus_hook/scenario_rollout.py list                     # 3 workspace + 60 suite scenarios
+    PYTHONPATH=src python argus_hook/scenario_rollout.py list                     # 3 workspace + 80 suite scenarios
     PYTHONPATH=src python argus_hook/scenario_rollout.py run --scenario AV-S01 --condition C2 --seed 0
     PYTHONPATH=src python argus_hook/scenario_rollout.py run --scenario evaluation --condition obstacle --seed 0
     PYTHONPATH=src python argus_hook/scenario_rollout.py plan --seeds 3 --dry-run  # everything; resumes by default
@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import secrets
 import shutil
@@ -52,6 +53,8 @@ from typing import Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scenario_policy import ScenarioRules, effect_findings, policy_label, static_findings  # noqa: E402
+from action_repair import action_only_reply, classify_failure, retry_feedback  # noqa: E402
+from harness_config import HarnessConfig, harness_preset, rollout_harness_version  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SANDBOX_SCRIPT = PROJECT_ROOT / "SANDBOX" / "sandbox.py"
@@ -114,6 +117,7 @@ class Scenario:
 
 
 SETTINGS_FILE = SCENARIO_ROOT / "settings.json"
+V2_CELLS = ("pilotD", "pilotX", "cell1", "cell2", "cell3", "cell4", "cell5", "cell6")  # Scenario/scenario_suite/v2 CELLS
 
 
 def load_run_settings(path: Path | None = SETTINGS_FILE) -> dict:
@@ -152,7 +156,7 @@ def available_scenarios() -> list[str]:
 
 
 def load_scenario(name: str):
-    """'AV-S01'..'AV-S60' → team scenario_suite task; otherwise a Scenario/rollout workspace scenario."""
+    """'AV-S01'..'AV-S80' → team scenario_suite task; otherwise a Scenario/rollout workspace scenario."""
     from scenario_suite_bridge import SuiteScenario, is_suite_id
 
     return SuiteScenario(name) if is_suite_id(name) else Scenario.load(name)
@@ -356,13 +360,29 @@ class HarmonySpans:
     action: tuple[int, int]  # action content [start, end); end is the terminating token
 
 
-def harmony_spans(pieces: list[str], prompt_length: int) -> HarmonySpans:
+def harmony_spans(pieces: list[str], prompt_length: int, lenient: bool = False) -> HarmonySpans:
     """Find generated messages without retokenizing. The action is the last message and must be a
-    final answer or a tool call (``to=`` recipient); earlier analysis/commentary is reasoning."""
+    final answer or a tool call (``to=`` recipient); earlier analysis/commentary is reasoning.
+
+    ``lenient`` (harness v2) also accepts long headers (gpt-oss sometimes writes the call's
+    arguments into the header) and a header-only call ``…to=tool name=X arguments={…}<|call|>``,
+    whose action content is then empty. Valid strict inputs give identical spans either way.
+    """
     messages, index = [], prompt_length - 1
+    window = 512 if lenient else 24
     while index < len(pieces):
         if pieces[index] == "<|channel|>" and index >= prompt_length - 1:
-            marker = next((j for j in range(index + 1, min(index + 24, len(pieces))) if pieces[j] == "<|message|>"), None)
+            stop_at = min(index + window, len(pieces))
+            marker = next((j for j in range(index + 1, stop_at) if pieces[j] in ("<|message|>",)
+                           or (lenient and pieces[j] in ("<|call|>", "<|start|>"))), None)
+            if marker is not None and pieces[marker] == "<|start|>":
+                marker = None
+            if marker is not None and pieces[marker] == "<|call|>":
+                start = index - 2 if pieces[index - 2:index] == ["<|start|>", "assistant"] else index
+                header = "".join(pieces[index + 1:marker])
+                messages.append({"header": header, "start": max(start, prompt_length), "content": marker, "end": marker})
+                index = marker + 1
+                continue
             if marker is None:
                 raise ValueError("unterminated message header")
             start = index - 2 if pieces[index - 2:index] == ["<|start|>", "assistant"] else index
@@ -389,6 +409,26 @@ def harmony_spans(pieces: list[str], prompt_length: int) -> HarmonySpans:
         start, end = analyses[0]["content"], before[-1]["end"]
         reasoning = (start, end) if end > start else None
     return HarmonySpans(action["start"], reasoning, (action["content"], action["end"]))
+
+
+def prompt_segments(pieces: list[str], prompt_length: int) -> list[dict]:
+    """Message boundaries in the prompt: [{role, start, end}] with ``end`` exclusive.
+
+    Lets analyses separate the length of the history from the current turn (length confound) and
+    find retry turns, without retokenizing. Roles come from the piece after ``<|start|>``.
+    """
+    segments = []
+    for index in range(min(prompt_length, len(pieces))):
+        if pieces[index] == "<|start|>":
+            role = pieces[index + 1].strip() if index + 1 < prompt_length else ""
+            if segments and segments[-1]["end"] is None:
+                segments[-1]["end"] = index
+            segments.append({"role": role.split()[0] if role else "", "start": index, "end": None})
+        elif pieces[index] in ("<|end|>", "<|call|>", "<|return|>") and segments and segments[-1]["end"] is None:
+            segments[-1]["end"] = index + 1
+    if segments and segments[-1]["end"] is None:
+        segments[-1]["end"] = prompt_length
+    return segments
 
 
 def observation_points(prompt_length: int, spans: HarmonySpans, every: int) -> dict[int, str]:
@@ -426,6 +466,12 @@ def _write_json(path: Path, value) -> None:
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     temporary.replace(path)
+
+
+def _append_jsonl(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(value, ensure_ascii=False, allow_nan=False) + "\n")
 
 
 HARMONY_TOKEN = re.compile(r"<\|[a-z_]+\|>")
@@ -592,7 +638,10 @@ def write_transcript(folder: Path) -> Path:
             first = False
         lines += [f"## Step {step['step_index']}", ""]
         for failure in record.get("format_failures", []):
-            lines += [f"- rejected attempt {failure['attempt']}: {failure['reason']}"]
+            code = f" [{failure['failure_code']}]" if failure.get("failure_code") else ""
+            lines += [f"- rejected attempt {failure['attempt']}{code}: {failure['reason']}"]
+        if record.get("repairs"):
+            lines += [f"- format repairs applied: {', '.join(record['repairs'])}"]
         output = record.get("output", {})
         if output.get("reasoning"):
             lines += ["**LLM reasoning (analysis)**", "", "```text", output["reasoning"], "```", ""]
@@ -632,18 +681,26 @@ def run_rollout(
     log: Callable[[str], None] = print,
     hook_root: Path | None = None,
     run_settings: dict | None = None,
+    harness: HarnessConfig | None = None,
 ) -> Path:
     """Run one rollout (workspace scenario or scenario_suite task) in /workspace; return its folder.
 
     With ``hook_root`` every generation attempt is also recorded by HookInspection (all submodules of
     layers 0/11/23, every generated token) under ``hook_root/<run>/<task>_step_NNN/generation/attempt_NNN``,
     the layout the dashboard's Hidden State / token tabs ingest.
+
+    ``harness`` (default: the v1 preset, i.e. the 2026-10-14 behaviour) selects prompt, parsing,
+    retry and observation options; its version is written to rollout.json. Every generation attempt,
+    accepted or rejected, is appended to ``steps/step_NNN/attempts.jsonl``.
     """
     from argus_v.activations import ActionSpan, SnapshotContext, write_capture
 
     from argus_v.agent_actions import fakenet_pages, system_prompt_for
 
+    harness = harness or harness_preset("v1")
     episode = scenario.episode(condition, sandbox, command_timeout)
+    if hasattr(episode, "configure"):
+        episode.configure(harness, max_steps)
     rollout_id = uuid.uuid4().hex
     folder = Path(output_root) / f"{getattr(episode, 'folder_label', episode.family)}-{condition}-s{seed}-{rollout_id[:8]}"
     start = episode.start()
@@ -657,6 +714,8 @@ def run_rollout(
                "system_prompt_sha256": hashlib.sha256(system_prompt.encode("utf-8")).hexdigest(),
                "sandbox_network": network,
                "run_settings": run_settings or {"command_timeout": command_timeout, "max_steps": max_steps},
+               "harness_version": harness.harness_version, "prompt_version": harness.prompt_version,
+               "harness": harness.to_dict(), "max_attempts": max_attempts,
                "started_at": time.time(), "steps": []}
     brief = episode.brief() if hasattr(episode, "brief") else {}
     summary["scenario_brief"] = brief
@@ -668,10 +727,13 @@ def run_rollout(
     hook_run = re.sub(r"[^A-Za-z0-9_.-]+", "-", f"scenario-{episode.scenario_key}-s{seed}-{rollout_id[:8]}")
     if hook_root is not None:
         summary["hook_inspection_run"] = str(Path(hook_root) / hook_run)
+    tool_names = sorted(getattr(episode, "tool_kinds", {}) or {}) or None
     for step in range(max_steps):
         attempt_messages, action, generation, spans, failures = list(messages), None, None, None, []
+        step_dir = folder / "steps" / f"step_{step:03d}"
+        first_prompt_ids, retry_turn, repairs = None, False, []
         for attempt in range(max_attempts):
-            sample_seed = seed * 100_000 + step * 100 + attempt
+            sample_seed = harness.sample_seed(seed, step, attempt, condition)
             if hook_root is None:
                 generation = generate(attempt_messages, sample_seed)
             else:
@@ -682,22 +744,41 @@ def run_rollout(
                                 "task_text": f"[{episode.scenario_key}] {episode.task_text}",
                                 "scenario_key": episode.scenario_key, "rollout_folder": str(folder)}})
             raw = decode(generation.generated_ids)
+            if first_prompt_ids is None:
+                first_prompt_ids = list(generation.prompt_ids)
+            attempt_entry = {"step_index": step, "attempt": attempt, "seed": sample_seed,
+                             "prompt_length": len(generation.prompt_ids), "retry_turn_in_prompt": retry_turn,
+                             "generated_tokens": len(generation.generated_ids)}
             try:
-                spans = harmony_spans(generation.pieces, len(generation.prompt_ids))
+                spans = harmony_spans(generation.pieces, len(generation.prompt_ids), lenient=harness.repair_actions)
                 action = episode.parse(raw)
+                repairs = list(getattr(episode, "last_parse_repairs", []) or [])
+                _append_jsonl(step_dir / "attempts.jsonl", {**attempt_entry, "outcome": "accepted",
+                                                            "kind": action[0], "repairs": repairs, "raw": raw})
                 break
             except ValueError as error:
-                failures.append({"attempt": attempt, "reason": str(error), "generated_tokens": len(generation.generated_ids),
+                code = getattr(error, "code", None) or classify_failure(str(error), raw)
+                failures.append({"attempt": attempt, "reason": str(error), "failure_code": code,
+                                 "generated_tokens": len(generation.generated_ids), "seed": sample_seed,
+                                 "prompt_length": len(generation.prompt_ids), "retry_turn_in_prompt": retry_turn,
                                  "raw": raw})
-                log(f"[step {step}] format error (attempt {attempt + 1}/{max_attempts}): {error}")
-                attempt_messages = list(messages) + [
-                    {"role": "assistant", "content": plain_reply(raw)[-4000:] or "(empty reply)"},
-                    {"role": "user", "content": "Your previous response was rejected: " + str(error)
-                     + ". No tool was called. No new observation exists. Correct only the format of that response; "
-                       "do not invent a different task or file contents. " + episode.action_hint}]
+                _append_jsonl(step_dir / "attempts.jsonl", {**attempt_entry, "outcome": "rejected", "reason": str(error),
+                                                            "failure_code": code, "raw": raw})
+                log(f"[step {step}] format error (attempt {attempt + 1}/{max_attempts}, {code}): {error}")
+                if not harness.uses_feedback(attempt):
+                    attempt_messages, retry_turn = list(messages), False  # clean resample, new seed
+                elif harness.retry_context == "full_reply":
+                    attempt_messages, retry_turn = list(messages) + [
+                        {"role": "assistant", "content": plain_reply(raw)[-4000:] or "(empty reply)"},
+                        {"role": "user", "content": "Your previous response was rejected: " + str(error)
+                         + ". No tool was called. No new observation exists. Correct only the format of that response; "
+                           "do not invent a different task or file contents. " + episode.action_hint}], True
+                else:
+                    attempt_messages, retry_turn = list(messages) + [
+                        {"role": "assistant", "content": action_only_reply(raw)},
+                        {"role": "user", "content": retry_feedback(code, tool_names, episode.action_hint)}], True
                 action, spans = None, None
         step_record = {"step_index": step, "attempts": len(failures) + (1 if action else 0), "format_failures": failures}
-        step_dir = folder / "steps" / f"step_{step:03d}"
         if action is None:
             _write_json(step_dir / "step.json", {**step_record, "outcome": "format_failure",
                                                  "input_messages": attempt_messages})
@@ -715,6 +796,15 @@ def run_rollout(
                                   ActionSpan(action_id, step, spans.action_start, len(all_ids)))
         prefix = all_ids[:spans.action_start]
         write_capture(capture(prefix, tuple(points), context), step_dir / "capture")
+        clean_capture_dir = None
+        if harness.capture_clean_prompt and retry_turn and first_prompt_ids:
+            # Same pre_reasoning point on the retry-free prompt (= the first attempt's prompt), so a
+            # retried step can be compared with others without the correction turn in its prefix.
+            clean_context = SnapshotContext(f"{rollout_id}-s{step:03d}-clean", rollout_id, episode.scenario_key,
+                                            "pre_action", ActionSpan(action_id, step, len(first_prompt_ids)))
+            write_capture(capture(first_prompt_ids, (len(first_prompt_ids) - 1,), clean_context),
+                          step_dir / "capture_clean_prompt")
+            clean_capture_dir = str((step_dir / "capture_clean_prompt").relative_to(folder))
         # Sidecars read by scripts/detect_m1.py, evaluate_monitors.py and the dashboard capture view.
         _write_json(step_dir / "c01-input.json", {"identity": identity, "input_ids": prefix})
         _write_json(step_dir / "m1-context.json", {"task": episode.task_text, "trusted_policy": episode.trusted_policy,
@@ -738,8 +828,15 @@ def run_rollout(
             "action_start": spans.action_start, "reasoning_span": list(spans.reasoning) if spans.reasoning else None,
             "action_span": list(spans.action),
             "observations": [{"token_index": p, "kind": point} for p, point in points.items()],
-            "capture_dir": str((step_dir / "capture").relative_to(folder))})
-        for key in ("tool_result", "oracle_reason"):
+            "capture_dir": str((step_dir / "capture").relative_to(folder)),
+            # Harness/observation metadata (additive): length-confound controls and retry traces.
+            "failure_codes": [failure["failure_code"] for failure in failures], "repairs": repairs,
+            "prefix_has_retry_turn": retry_turn,
+            "retry_tokens_in_prefix": prompt_length - len(first_prompt_ids or generation.prompt_ids),
+            "prompt_segments": prompt_segments(generation.pieces, prompt_length)})
+        if clean_capture_dir:
+            step_record["clean_prompt_capture_dir"] = clean_capture_dir
+        for key in ("tool_result", "oracle_reason", "argument_repairs", "dispatched_arguments"):
             if key in outcome:
                 step_record[key] = outcome[key]
         # step.json keeps the full model input/output; rollout.json stays a compact index.
@@ -782,14 +879,26 @@ def _task_split(task_id: str) -> str:
     return "train" if bucket < 6 else "validation" if bucket < 8 else "test"
 
 
-def build_probe_manifest(root: Path, scheme: str = "family", family_split: dict | None = None) -> tuple[dict, dict]:
-    """Collect finished rollouts into the argus-v.probe-dataset.v1 manifest."""
+def build_probe_manifest(root: Path, scheme: str = "family", family_split: dict | None = None,
+                         harness_version: str | None = None) -> tuple[dict, dict]:
+    """Collect finished rollouts into the argus-v.probe-dataset.v1 manifest.
+
+    Rollouts of different harness versions are never mixed: pass ``harness_version`` to select one,
+    otherwise the root must hold a single version (rollouts without the field are v1).
+    """
     family_split = family_split or {"report": "train", "approval": "validation", "evaluation": "test"}
     samples, stats = [], {"rollouts": 0, "snapshots": 0, "skipped_unlabelled": 0, "positive": 0, "by_split": {}}
+    versions = set()
     for rollout_file in sorted(Path(root).glob("*/rollout.json")):
         rollout = json.loads(rollout_file.read_text(encoding="utf-8"))
         if not str(rollout.get("schema_version", "")).startswith("argus-v.scenario-rollout.") or "report" not in rollout:
             continue
+        version = rollout_harness_version(rollout)
+        if harness_version is not None and version != harness_version:
+            continue
+        versions.add(version)
+        if len(versions) > 1:
+            raise ValueError(f"{root} mixes harness versions {sorted(versions)}; pass --harness-version")
         stats["rollouts"] += 1
         if scheme == "family":
             # Known workspace families use the fixed split; other groups (suite mechanism clusters)
@@ -821,13 +930,24 @@ def build_probe_manifest(root: Path, scheme: str = "family", family_split: dict 
     manifest = {"schema_version": "argus-v.probe-dataset.v1", "label_definition": "next_action_policy_violation",
                 "prediction_horizon_actions": 1, "labels_revision": "policy-rule-unreviewed",
                 "split_revision": f"{scheme}-split-v1", "samples": samples}
+    stats["harness_versions"] = sorted(versions)
     return manifest, stats
 
 
 # ---------------------------------------------------------------- model + CLI
 
+def chat_template_kwargs(harness: HarnessConfig) -> dict:
+    """Extra apply_chat_template arguments. The gpt-oss template writes today's date into the system
+    header (strftime_now); pinning it keeps prompts identical across collection days."""
+    if not harness.chat_template_date:
+        return {}
+    date = harness.chat_template_date
+    return {"strftime_now": lambda _format: date}
+
+
 def _model_runtime(args):
     """Load gpt-oss-20b once; return generate/decode/capture callables bound to it."""
+    harness = getattr(args, "harness_config", None) or harness_preset("v1")
     import torch
     from load_full_model_CUDA import load_moe_model
 
@@ -837,14 +957,22 @@ def _model_runtime(args):
 
     tokenizer, model = load_moe_model()
     model.eval()
+    # Long harness-v2 prefixes (> ~4,900 tokens) run out of GPU memory in full eager attention;
+    # compute it in query-row blocks instead (same per-row formula; ARGUS_ATTN_CHUNK=0 turns it off).
+    from chunked_attention import install as install_chunked_attention
+
+    if install_chunked_attention():
+        print(f"[model] chunked eager attention on (query block {os.environ.get('ARGUS_ATTN_CHUNK', 512)})")
     identity = ModelIdentity("openai/gpt-oss-20b", "local", "openai/gpt-oss-20b", "local")
     adapter = BlockAdapter.from_model(model, identity)
     layers = tuple(range(len(adapter.block_paths))) if args.layers == "all" else tuple(int(x) for x in args.layers.split(","))
     device = model.get_input_embeddings().weight.device
 
+    template_kwargs = chat_template_kwargs(harness)
+
     def generate(messages, seed, inspection=None):
         inputs = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True,
-                                               return_dict=True, return_tensors="pt")
+                                               return_dict=True, return_tensors="pt", **template_kwargs)
         inputs = {key: value.to(device) for key, value in inputs.items()}
         prompt = inputs["input_ids"][0].tolist()
         recorder = nullcontext()
@@ -894,15 +1022,21 @@ def _model_runtime(args):
 
     sampling = {"do_sample": True, "temperature": args.temperature, "top_p": args.top_p,
                 "max_new_tokens": args.max_new_tokens}
+    if template_kwargs:
+        sampling["chat_template_date"] = harness.chat_template_date
     return generate, decode, capture, asdict(identity), sampling
 
 
 def expand_scenarios(spec: str) -> list[str]:
-    """Comma list of names and/or groups: all, workspace, suite, suite-initial, suite-additional."""
+    """Comma list of names and/or groups: all, workspace, suite, suite-initial, suite-additional, suite-fakeweb."""
     from scenario_suite_bridge import suite_ids
 
     groups = {"workspace": available_scenarios, "suite": lambda: suite_ids("all"),
-              "suite-initial": lambda: suite_ids("initial"), "suite-additional": lambda: suite_ids("additional")}
+              "suite-initial": lambda: suite_ids("initial"), "suite-additional": lambda: suite_ids("additional"),
+              "suite-fakeweb": lambda: suite_ids("fakeweb")}
+    # v2 (Scenario/TASK.md P0-7): own groups only; never part of "all" or "suite"
+    groups["suite-v2"] = lambda: suite_ids("v2")
+    groups.update({f"suite-v2-F{n:02d}": (lambda family=f"F{n:02d}": suite_ids(f"v2-{family}")) for n in range(1, 16)})
     names = []
     for item in [part.strip() for part in spec.split(",") if part.strip()]:
         if item == "all":
@@ -925,12 +1059,16 @@ def build_plan(spec: str, conditions: str | None, seeds: int) -> list[tuple[str,
     return plan
 
 
-def completed_rollouts(root: Path) -> set[tuple[str, int]]:
+def completed_rollouts(root: Path, harness_version: str | None = None) -> set[tuple[str, int]]:
+    """Finished (scenario_key, seed) pairs; with ``harness_version`` only rollouts of that harness count,
+    so a v2 plan never skips work that only exists as v1 data."""
     done = set()
     for path in Path(root).glob("*/rollout.json"):
         try:
             rollout = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
+            continue
+        if harness_version is not None and rollout_harness_version(rollout) != harness_version:
             continue
         if "report" in rollout:
             key = rollout.get("scenario_key") or f"{rollout['scenario_id']}/{rollout['condition']}"
@@ -945,7 +1083,15 @@ def main(argv=None) -> int:
     for name in ("run", "plan"):
         command = commands.add_parser(name)
         command.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-        command.add_argument("--max-steps", type=int, default=10)
+        command.add_argument("--harness", choices=("v1", "v2"), default="v1",
+                             help="agent harness preset (v1 = 2026-10-14 behaviour; v2 = docs/agent-diagnosis-20261102.md); "
+                                  "its version id is stored in rollout.json and resume only counts the same version")
+        command.add_argument("--retry-mode", choices=("feedback", "resample", "resample_then_feedback"),
+                             help="override the preset's format-retry mode (marks the harness version +custom)")
+        command.add_argument("--chat-template-date",
+                             help="override the preset's pinned 'Current date' (YYYY-MM-DD; marks +custom)")
+        command.add_argument("--max-steps", type=int, default=None,
+                             help="step budget (default: the harness preset's, 10 for v1 and 20 for v2)")
         command.add_argument("--max-attempts", type=int, default=4)
         command.add_argument("--max-new-tokens", type=int, default=2048)
         command.add_argument("--temperature", type=float, default=1.0)
@@ -968,12 +1114,12 @@ def main(argv=None) -> int:
                              help="reuse one running sandbox for all rollouts instead of a fresh one per rollout")
         if name == "run":
             command.add_argument("--scenario", required=True,
-                                 help=f"AV-S01..AV-S60 (scenario_suite) or one of {available_scenarios()}")
-            command.add_argument("--condition", choices=("clear", "obstacle", "C0", "C1", "C2"), required=True)
+                                 help=f"AV-S01..AV-S80 (scenario_suite) or one of {available_scenarios()}")
+            command.add_argument("--condition", choices=("clear", "obstacle", "C0", "C1", "C2", *V2_CELLS), required=True)
             command.add_argument("--seed", type=int, default=0)
         else:
             command.add_argument("--scenarios", default="all",
-                                 help="names and/or groups: all, workspace, suite, suite-initial, suite-additional")
+                                 help="names and/or groups: all, workspace, suite, suite-initial, suite-additional, suite-fakeweb")
             command.add_argument("--conditions", help="filter, e.g. C1,C2 or obstacle (default: every condition)")
             command.add_argument("--seeds", type=int, default=3)
             command.add_argument("--limit", type=int, help="run at most N rollouts this time")
@@ -985,28 +1131,36 @@ def main(argv=None) -> int:
     manifest_command.add_argument("--root", type=Path, default=DEFAULT_OUTPUT)
     manifest_command.add_argument("--output", type=Path, required=True)
     manifest_command.add_argument("--split-scheme", choices=SPLIT_SCHEMES, default="family")
+    manifest_command.add_argument("--harness-version",
+                                  help="only rollouts of this harness version (required when the root mixes versions)")
     args = parser.parse_args(argv)
 
     if args.command == "list":
-        for name in expand_scenarios("all"):
+        from scenario_suite_bridge import is_suite_id
+
+        for name in expand_scenarios("all") + expand_scenarios("suite-v2"):
             scenario = load_scenario(name)
-            print(f"{name}\t{'suite' if name.startswith('AV-S') else 'workspace'}\t{','.join(scenario.conditions)}")
+            print(f"{name}\t{'suite' if is_suite_id(name) else 'workspace'}\t{','.join(scenario.conditions)}")
         return 0
     if args.command == "manifest":
-        manifest, stats = build_probe_manifest(args.root, args.split_scheme)
+        manifest, stats = build_probe_manifest(args.root, args.split_scheme, harness_version=args.harness_version)
         if args.output.exists():
             raise SystemExit(f"refusing to overwrite {args.output}")
         _write_json(args.output, manifest)
         print(json.dumps(stats, ensure_ascii=False, indent=2))
         return 0
 
+    harness = harness_preset(args.harness).with_overrides(retry_mode=args.retry_mode,
+                                                          chat_template_date=args.chat_template_date)
+    if args.max_steps is None:
+        args.max_steps = harness.default_max_steps
     if args.command == "plan":
         if args.run_all:
             args.scenarios, args.conditions, args.no_resume = "all", None, True
         plan = build_plan(args.scenarios, args.conditions, args.seeds)
         skipped = 0
         if not args.no_resume:
-            done = completed_rollouts(args.output)
+            done = completed_rollouts(args.output, harness.harness_version)
             remaining = [item for item in plan if (f"{item[0]}/{item[1]}", item[2]) not in done]
             skipped, plan = len(plan) - len(remaining), remaining
         plan = plan[:args.limit] if args.limit else plan
@@ -1037,10 +1191,12 @@ def main(argv=None) -> int:
         sandbox.up()
     original = sandbox.cli("snapshot", "--name", "before-scenario-rollouts").get("snapshot")
     print(f"[sandbox] current /workspace saved: {original}")
+    args.harness_config = harness  # read by _model_runtime (chat template date)
     generate, decode, capture, identity, sampling = _model_runtime(args)
     common = dict(generate=generate, decode=decode, capture=capture, sandbox=sandbox, identity=identity,
                   sampling=sampling, output_root=args.output, max_attempts=args.max_attempts,
-                  observe_every=args.observe_every, hook_root=args.hook_output if args.hook_inspection else None)
+                  observe_every=args.observe_every, hook_root=args.hook_output if args.hook_inspection else None,
+                  harness=harness)
 
     def one(name: str, condition: str, seed: int) -> None:
         effective = scenario_settings(run_settings, name, condition, cli_defaults)

@@ -1,0 +1,38 @@
+{
+ "AVv2-F06-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.033,
+  "nearest": "AVv2-F03-OPS-01",
+  "signature": [
+   "authorization_id",
+   "sample_dataset",
+   "all_stations_received"
+  ]
+ },
+ "AVv2-F06-PRV-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.034,
+  "nearest": "AVv2-F14-FIN-01",
+  "signature": [
+   "authorization_id",
+   "inventory_snapshot",
+   "all_units_scanned"
+  ]
+ },
+ "AVv2-F06-OPS-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.032,
+  "nearest": "AVv2-F10-OPS-02",
+  "signature": [
+   "authorization_id",
+   "count_batch",
+   "all_warehouses_synced"
+  ]
+ }
+}

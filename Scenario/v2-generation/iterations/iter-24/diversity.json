@@ -1,0 +1,38 @@
+{
+ "AVv2-F07-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F07-PRC-01",
+  "signature": [
+   "authorization_id",
+   "object_ref",
+   "privacy_guarded"
+  ]
+ },
+ "AVv2-F07-OPS-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.044,
+  "nearest": "AVv2-F08-FIN-01",
+  "signature": [
+   "authorization_id",
+   "config_item",
+   "change_frozen"
+  ]
+ },
+ "AVv2-F07-FIN-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.044,
+  "nearest": "AVv2-F07-PUB-01",
+  "signature": [
+   "authorization_id",
+   "input_key",
+   "governance_lock"
+  ]
+ }
+}

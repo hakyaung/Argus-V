@@ -1,0 +1,110 @@
+{
+  "visibility": "OPERATOR_ONLY",
+  "batch": "fakeweb",
+  "model_rollouts": 0,
+  "scenario_count": 20,
+  "conditions": 60,
+  "entries": [
+    {
+      "scenario": "AV-S61",
+      "file": "AV-S61.v1.json",
+      "sha256": "343774b9d1922a6abab1572c109e76b7e16d3742688ba0cf29bfe29148cd83b9"
+    },
+    {
+      "scenario": "AV-S62",
+      "file": "AV-S62.v1.json",
+      "sha256": "0758b60fe4fadef089b55498f40fd654d929edc209097466f03a4f58113c1914"
+    },
+    {
+      "scenario": "AV-S63",
+      "file": "AV-S63.v1.json",
+      "sha256": "c321e2eb28a520647cd956dd10da6481d3902c0577a33b52648cb1ad2d1cfb63"
+    },
+    {
+      "scenario": "AV-S64",
+      "file": "AV-S64.v1.json",
+      "sha256": "4eb0f9a3f2114b818f5931a8f2126900994c11db46f750809051b5f510cfa01d"
+    },
+    {
+      "scenario": "AV-S65",
+      "file": "AV-S65.v1.json",
+      "sha256": "2b36a14b0ada0390f3035614bef06346748f88abec7c48d48951e7fce5adc56b"
+    },
+    {
+      "scenario": "AV-S66",
+      "file": "AV-S66.v1.json",
+      "sha256": "ae9b07e15e7f1957d4be21ce45bb763eda097abee0c2c74910bbcfb9429b4ef1"
+    },
+    {
+      "scenario": "AV-S67",
+      "file": "AV-S67.v1.json",
+      "sha256": "d2535e4d8f6fecf430dd77edd2dc3515ad0b8cb0a658da63814f25e629f32676"
+    },
+    {
+      "scenario": "AV-S68",
+      "file": "AV-S68.v1.json",
+      "sha256": "d1765bafdd45e80bf1269035f82d1a0a32c90dd558bf23130ba58181422637b4"
+    },
+    {
+      "scenario": "AV-S69",
+      "file": "AV-S69.v1.json",
+      "sha256": "40e46e408c0845e81d5fa8a9abfc216e43a651e4e22f023084ebf5b2b452a49e"
+    },
+    {
+      "scenario": "AV-S70",
+      "file": "AV-S70.v1.json",
+      "sha256": "08d2a547120e27c80cb5863262e64e8896652ac5cf7940428d354855579a6212"
+    },
+    {
+      "scenario": "AV-S71",
+      "file": "AV-S71.v1.json",
+      "sha256": "967495c429c19c355b5cb93bc733d4bfdccca5af98723438f84919965438c6ad"
+    },
+    {
+      "scenario": "AV-S72",
+      "file": "AV-S72.v1.json",
+      "sha256": "d6c183b1e74f40c89cb0a550958bc1e8dc8d76ae161cc9ecd207a5c2b193c42d"
+    },
+    {
+      "scenario": "AV-S73",
+      "file": "AV-S73.v1.json",
+      "sha256": "2377de0fd56a2823a2f95a5a751ff53ec77a7c4564f38d25fc48eb5bd25fab14"
+    },
+    {
+      "scenario": "AV-S74",
+      "file": "AV-S74.v1.json",
+      "sha256": "4d7793f85205cd24dd0ec635aa517d3a7888f5dc4750b34460c526f9c945daba"
+    },
+    {
+      "scenario": "AV-S75",
+      "file": "AV-S75.v1.json",
+      "sha256": "9a38d76c7956ab6f1a2f30f74d470ae1804f83991cdea18c3a39cddf698bbbf7"
+    },
+    {
+      "scenario": "AV-S76",
+      "file": "AV-S76.v1.json",
+      "sha256": "7d9a5c8148db90649ef417cd98dfefd160fb89abac7163410e9786514c0447e2"
+    },
+    {
+      "scenario": "AV-S77",
+      "file": "AV-S77.v1.json",
+      "sha256": "ac984ec7d0ba89fa4aad37863872f41b81ea6126429db7014d9d5cd28f875aa8"
+    },
+    {
+      "scenario": "AV-S78",
+      "file": "AV-S78.v1.json",
+      "sha256": "e9bef322467a6e8c781eba26bc06d6792bab1b66e1da7bade5ba1c73ae04bb1d"
+    },
+    {
+      "scenario": "AV-S79",
+      "file": "AV-S79.v1.json",
+      "sha256": "b13516a24c645e0beedf4d0408d89cfa93285d3139c6bba83fdf2993faf66245"
+    },
+    {
+      "scenario": "AV-S80",
+      "file": "AV-S80.v1.json",
+      "sha256": "50492c53a088c77b695527637caad297a5bf82ae67708a01a93605b383d60287"
+    }
+  ],
+  "warning": "Contains private fixtures, plans and gold. Do not expose to the agent."
+}

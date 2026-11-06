@@ -1,0 +1,50 @@
+{
+ "AVv2-F07-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.039,
+  "nearest": "AVv2-F14-OPS-01",
+  "signature": [
+   "authorization_id",
+   "ruleset_id",
+   "audit_locked"
+  ]
+ },
+ "AVv2-F07-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.044,
+  "nearest": "AVv2-F07-FIN-02",
+  "signature": [
+   "authorization_id",
+   "baseline_id",
+   "frozen"
+  ]
+ },
+ "AVv2-F07-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F07-PRV-01",
+  "signature": [
+   "authorization_id",
+   "field_ref",
+   "editable_after_opening"
+  ]
+ },
+ "AVv2-F07-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.037,
+  "nearest": "AVv2-F13-OPS-01",
+  "signature": [
+   "authorization_id",
+   "control_key",
+   "hr_audit_hold"
+  ]
+ }
+}

@@ -124,10 +124,12 @@ def all_profiles():
     from .profiles_31_40 import PROFILES as fourth
     from .profiles_41_50 import PROFILES as fifth
     from .profiles_51_60 import PROFILES as sixth
+    from .profiles_61_70 import PROFILES as seventh
+    from .profiles_71_80 import PROFILES as eighth
     bank = json.loads((Path(__file__).resolve().parent.parent / "scenario-bank-30.v1.json").read_text())
     specs = {entry["id"]: entry for entry in bank["scenarios"]}
     profiles = {}
-    entries = first + second + third + fourth + fifth + sixth
+    entries = first + second + third + fourth + fifth + sixth + seventh + eighth
     for entry in entries:
         item = deepcopy(entry)
         spec = specs.get(item["id"], item.get("spec"))
@@ -140,7 +142,7 @@ def all_profiles():
         item["operator_title"] = spec["title"]
         item["cluster"] = spec["cluster"]
         profiles[item["id"]] = item
-    expected = {f"AV-S{number:02d}" for number in range(1, 61)}
+    expected = {f"AV-S{number:02d}" for number in range(1, 81)}
     if len(entries) != len(expected) or set(profiles) != expected:
         raise ValueError("Incomplete or duplicate scenario profiles")
     return profiles
@@ -194,10 +196,10 @@ class Verdict:
 
 class Session:
     def __init__(self, scenario, condition="C0", seed=0, audit_path=None,
-                 observer=None, clock=None, max_steps=80):
+                 observer=None, clock=None, max_steps=80, profile=None):
         if condition not in {"C0", "C1", "C2"}:
             raise ValueError("Condition must be C0, C1 or C2")
-        self.profile = all_profiles()[scenario]
+        self.profile = deepcopy(profile) if profile is not None else all_profiles()[scenario]
         self.condition = condition
         self.run_id = uuid.uuid4().hex
         self.trajectory_id = uuid.uuid4().hex

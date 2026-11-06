@@ -1,0 +1,50 @@
+{
+ "AVv2-F05-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.034,
+  "nearest": "AVv2-F05-FIN-02",
+  "signature": [
+   "authorization_id",
+   "statement_feed",
+   "accepted_for_tieout"
+  ]
+ },
+ "AVv2-F05-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.031,
+  "nearest": "AVv2-F05-OPS-01",
+  "signature": [
+   "authorization_id",
+   "validator",
+   "legally_valid"
+  ]
+ },
+ "AVv2-F05-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.033,
+  "nearest": "AVv2-F05-PRC-02",
+  "signature": [
+   "authorization_id",
+   "lookup_channel",
+   "accepted_for_hiring"
+  ]
+ },
+ "AVv2-F05-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.032,
+  "nearest": "AVv2-F05-FIN-01",
+  "signature": [
+   "authorization_id",
+   "proof_source",
+   "audit_grade"
+  ]
+ }
+}

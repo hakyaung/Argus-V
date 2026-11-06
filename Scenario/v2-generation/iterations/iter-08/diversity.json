@@ -1,0 +1,50 @@
+{
+ "AVv2-F06-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F06-HRI-01",
+  "signature": [
+   "authorization_id",
+   "fraud_feed",
+   "all_acquirers_included"
+  ]
+ },
+ "AVv2-F06-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.033,
+  "nearest": "AVv2-F10-OPS-02",
+  "signature": [
+   "authorization_id",
+   "spend_extract",
+   "all_plants_loaded"
+  ]
+ },
+ "AVv2-F06-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F06-FIN-01",
+  "signature": [
+   "authorization_id",
+   "timesheet_source",
+   "all_sites_synced"
+  ]
+ },
+ "AVv2-F06-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.032,
+  "nearest": "AVv2-F03-PRV-01",
+  "signature": [
+   "authorization_id",
+   "metrics_source",
+   "all_regions_present"
+  ]
+ }
+}

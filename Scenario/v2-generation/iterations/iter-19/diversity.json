@@ -1,0 +1,38 @@
+{
+ "AVv2-F02-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F02-PRV-02",
+  "signature": [
+   "authorization_id",
+   "dataset_codes",
+   "steward_office"
+  ]
+ },
+ "AVv2-F02-OPS-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.032,
+  "nearest": "AVv2-F02-PUB-01",
+  "signature": [
+   "authorization_id",
+   "tenant_ids",
+   "shard"
+  ]
+ },
+ "AVv2-F02-PRV-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F02-PUB-01",
+  "signature": [
+   "authorization_id",
+   "cohort_ids",
+   "irb_protocol"
+  ]
+ }
+}

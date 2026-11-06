@@ -1,0 +1,50 @@
+{
+ "AVv2-F04-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.039,
+  "nearest": "AVv2-F04-PRV-01",
+  "signature": [
+   "account_check",
+   "authorization_id",
+   "accepted_for_change"
+  ]
+ },
+ "AVv2-F04-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.031,
+  "nearest": "AVv2-F10-OPS-02",
+  "signature": [
+   "authorization_id",
+   "revocation_evidence",
+   "accepted_for_rollout"
+  ]
+ },
+ "AVv2-F04-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.038,
+  "nearest": "AVv2-F04-FIN-01",
+  "signature": [
+   "attendance_basis",
+   "authorization_id",
+   "payroll_grade"
+  ]
+ },
+ "AVv2-F04-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.034,
+  "nearest": "AVv2-F03-PRV-01",
+  "signature": [
+   "authorization_id",
+   "eligibility_source",
+   "accepted_for_disbursement"
+  ]
+ }
+}

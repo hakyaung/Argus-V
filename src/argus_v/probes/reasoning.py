@@ -2,13 +2,52 @@
 
 import json
 from collections import defaultdict
-from dataclasses import asdict, replace
+from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
 
 import numpy as np
 
-from .data import file_sha256
+from .data import file_sha256, load_probe_dataset
+
+
+def resolve_layers(layer=23, layers=None):
+    selected = tuple(layers) if layers is not None else (layer,)
+    if (
+        not selected
+        or any(type(i) is not int or i < 0 for i in selected)
+        or selected != tuple(sorted(set(selected)))
+    ):
+        raise ValueError("layers must be nonempty, unique, increasing nonnegative block indexes")
+    return selected
+
+
+def source_views(manifest, baseline, layers):
+    """Verify the original layer layout before loading another layout of the same samples."""
+    views = {}
+    for split in ("train", "validation"):
+        original = load_probe_dataset(manifest, split=split, layers=baseline.spec.layers)
+        if original.fingerprint != baseline.training_report[f"{split}_fingerprint"]:
+            raise ValueError(f"{split} source fingerprint changed")
+        dataset = (
+            original
+            if layers == baseline.spec.layers
+            else load_probe_dataset(manifest, split=split, layers=layers)
+        )
+        if dataset.records != original.records or not np.array_equal(
+            dataset.labels, original.labels
+        ):
+            raise ValueError(f"{split} sample alignment changed across layer layouts")
+        comparable = replace(
+            dataset.spec,
+            layers=original.spec.layers,
+            hidden_sizes=original.spec.hidden_sizes,
+            module_paths=original.spec.module_paths,
+        )
+        if comparable != original.spec:
+            raise ValueError(f"{split} source model/configuration changed across layer layouts")
+        views[split] = dataset
+    return views
 
 
 def read_json(path):
@@ -59,10 +98,9 @@ def index_replays(roots, wanted):
                 metadata = read_json(path)
                 if not isinstance(metadata, dict):
                     continue
-                if (
-                    metadata.get("schema_version") != "argus-v.hook-inspection.v1"
-                    or metadata.get("phase") != "pre_action_full_prefix_replay"
-                ):
+                if metadata.get("schema_version") != "argus-v.hook-inspection.v1" or metadata.get(
+                    "phase"
+                ) not in ("pre_action_full_prefix_replay", "pre_action_pooled_replay"):
                     continue
                 ids = metadata.get("context", {}).get("input_ids")
                 if (
@@ -184,7 +222,37 @@ def full_replay_mean(path, hook, metadata, spec, span, capture):
     }
 
 
-def extract_mean(capture, metadata, spec, span, replays):
+def combine_layers(vectors, aggregation):
+    """Combine raw activation coordinates before train-only feature standardization."""
+    if aggregation == "concat":
+        return np.concatenate(vectors, axis=-1)
+    if aggregation != "mean":
+        raise ValueError("unsupported layer aggregation")
+    if len({v.shape for v in vectors}) != 1:
+        raise ValueError("layer mean requires equal hidden sizes")
+    return np.stack(vectors).mean(axis=0, dtype=np.float64).astype(np.float32)
+
+
+def extract_mean(capture, metadata, spec, span, replays, *, layer_aggregation="concat"):
+    if len(spec.layers) > 1:
+        vectors, origins = [], []
+        for layer, size, module in zip(
+            spec.layers, spec.hidden_sizes, spec.module_paths, strict=True
+        ):
+            single = replace(spec, layers=(layer,), hidden_sizes=(size,), module_paths=(module,))
+            vector, origin = extract_mean(capture, metadata, single, span, replays)
+            vectors.append(vector)
+            origins.append({"layer": layer, "input_dim": size, **origin})
+        return combine_layers(vectors, layer_aggregation), {
+            "source_kind": (
+                "mean_of_layer_reasoning_means"
+                if layer_aggregation == "mean"
+                else "concatenated_layer_reasoning_means"
+            ),
+            "layer_aggregation": layer_aggregation,
+            "layer_order": list(spec.layers),
+            "per_layer": origins,
+        }
     positions = {r["token_index"]: i for i, r in enumerate(metadata["alignment"])}
     start, end = span
     if all(i in positions for i in range(start, end)):
@@ -195,25 +263,54 @@ def extract_mean(capture, metadata, spec, span, replays):
                 raise ValueError("non-finite reasoning activation")
             vector = selected.mean(axis=0, dtype=np.float64).astype(np.float32)
         return vector, {"source_kind": "dense_reasoning_C01"}
-    matches = replays.get(capture_key(metadata), [])
+    matches = []
+    for path, hook in replays.get(capture_key(metadata), []):
+        selected = hook.get("selected_layers")
+        if selected is not None and spec.layers[0] not in selected:
+            continue
+        if hook.get("phase") == "pre_action_pooled_replay":
+            matches.append((path, hook))
+            continue
+        # Separate roots may contain the same prefix for different layers.
+        # Read only the tensor index to choose a layer; never open unrelated NPYs.
+        with (path.parent / "records.jsonl").open(encoding="utf-8") as handle:
+            rows = [json.loads(line) for line in handle]
+        if any(r.get("layer_index") == spec.layers[0] for r in rows):
+            matches.append((path, hook))
     if not matches:
         raise ValueError("no exact full-prefix replay; sparse C-01 is not a sentence mean")
     if len(matches) != 1:
         raise ValueError("ambiguous full-prefix replay copies; provide a narrower --hook-roots")
     path, hook = matches[0]
+    if hook.get("phase") == "pre_action_pooled_replay":
+        from .pooled import read_pooled
+
+        vector = read_pooled(path, hook, metadata, spec, span, capture)[spec.layers[0]]
+        archive = path.parent / hook["pooled_artifact"]["filename"]
+        return vector, {
+            "source_kind": "verified_pooled_replay",
+            "hook_manifest": str(path),
+            "hook_manifest_sha256": file_sha256(path),
+            "pooled_archive": str(archive),
+            "pooled_archive_sha256": file_sha256(archive),
+        }
     return full_replay_mean(path, hook, metadata, spec, span, capture)
 
 
-def paired_datasets(dataset, indexes, vectors, extraction_sha256):
+def paired_datasets(dataset, indexes, vectors, extraction_sha256, *, layer_aggregation="concat"):
     """Persist distinct feature semantics and fingerprints for the two input layouts."""
     records = tuple(dataset.records[i] for i in indexes)
     original = tuple(dataset.snapshots[i] for i in indexes)
+    last = dataset.features[indexes]
+    if layer_aggregation == "mean":
+        parts = np.split(last, np.cumsum(dataset.spec.hidden_sizes)[:-1], axis=-1)
+        last = combine_layers(parts, layer_aggregation)
     result = {}
     for name, matrix, pooling in (
-        ("last_token", dataset.features[indexes], "none"),
+        ("last_token", last, "none"),
         ("reasoning_mean", np.stack(vectors), "reasoning_mean"),
     ):
-        spec = replace(dataset.spec, pooling=pooling)
+        spec = replace(dataset.spec, pooling=pooling, layer_aggregation=layer_aggregation)
         snapshots = tuple(
             replace(s, spec=spec, features=matrix[i].copy()) for i, s in enumerate(original)
         )
@@ -221,7 +318,7 @@ def paired_datasets(dataset, indexes, vectors, extraction_sha256):
             {
                 "source_fingerprint": dataset.fingerprint,
                 "extraction_sha256": extraction_sha256,
-                "feature_spec": asdict(spec),
+                "feature_spec": spec.to_dict(),
                 "snapshot_ids": [r["snapshot_id"] for r in records],
                 "feature_sha256": sha256(matrix.tobytes()).hexdigest(),
             }

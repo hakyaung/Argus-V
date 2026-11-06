@@ -1,0 +1,50 @@
+{
+ "AVv2-F09-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.035,
+  "nearest": "AVv2-F15-PRC-01",
+  "signature": [
+   "authorization_id",
+   "sourcing_route",
+   "cap_respected"
+  ]
+ },
+ "AVv2-F09-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.033,
+  "nearest": "AVv2-F03-PRV-01",
+  "signature": [
+   "authorization_id",
+   "job_plan",
+   "quota_compliant"
+  ]
+ },
+ "AVv2-F09-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.036,
+  "nearest": "AVv2-F10-PUB-01",
+  "signature": [
+   "authorization_id",
+   "payout_plan",
+   "committee_cap_ok"
+  ]
+ },
+ "AVv2-F09-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.036,
+  "nearest": "AVv2-F15-HRI-01",
+  "signature": [
+   "authorization_id",
+   "expense_plan",
+   "preapproval_ok"
+  ]
+ }
+}

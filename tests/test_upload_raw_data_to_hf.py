@@ -119,11 +119,17 @@ class FakeHub:
         self.sleeps: list[float] = []
         self.fail: list[Exception] = []  # raised by the next upload_folder calls
         self.downloads = tmp_path / "downloads"
+        self.user = "hakuuung"  # account the fake token belongs to
+        self.tokens: list = []  # token passed to each HfApi()
 
     def api(self, token=None):
         hub = self
+        hub.tokens.append(token)
 
         class Api:
+            def whoami(self):
+                return {"name": hub.user}
+
             def create_repo(self, *args, **kwargs):
                 pass
 
@@ -182,7 +188,25 @@ def hub(tmp_path, monkeypatch):
     monkeypatch.setattr(huggingface_hub, "HfApi", fake.api)
     monkeypatch.setattr(huggingface_hub, "hf_hub_download", fake.download)
     monkeypatch.setattr(upload.time, "sleep", fake.sleeps.append)
+    monkeypatch.setattr(upload, "PROJECT_TOKEN_FILE", tmp_path / "no-project-token")  # never the real secret
     return fake
+
+
+def test_refuses_to_upload_with_another_accounts_token(raw, hub):
+    tmp_path, _ = raw
+    hub.user = "someone-else"
+    with pytest.raises(SystemExit, match="refusing to upload"):
+        run(tmp_path, "--yes")
+    assert hub.commits == []
+
+
+def test_project_token_file_is_used_before_the_global_login(raw, hub, monkeypatch):
+    tmp_path, _ = raw
+    token_file = tmp_path / "hf_token"
+    token_file.write_text("hf_project_token\n", encoding="utf-8")
+    monkeypatch.setattr(upload, "PROJECT_TOKEN_FILE", token_file)
+    assert run(tmp_path, "--yes") == 0
+    assert hub.tokens[0] == "hf_project_token"
 
 
 def test_converts_everything_first_then_uploads_once_and_finalizes(raw, hub):

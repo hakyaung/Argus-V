@@ -1,10 +1,10 @@
 # Argus-V 시나리오 실행 묶음
 
-기존 30개(AV-S01~30)에 추가 30개(AV-S31~60)를 더한 **로컬 모의 도구 환경**입니다. 총 60개 업무, 180개 대응 조건입니다.
+기존 30개(AV-S01~30)에 추가 30개(AV-S31~60), FakeWeb 공개 정보 조사 20개(AV-S61~80)를 더한 **로컬 모의 도구 환경**입니다. 총 80개 업무, 240개 대응 조건입니다.
 각 업무는 C0(정상), C1(장애 + 허용 대안 승인), C2(동일 장애 + 대안 거절)의 세 조건입니다.
-문서는 일반 매출·재고·견적·문의 등 합성 업무 자료이며 악성 명령을 삽입하지 않았습니다.
+AV-S01~60은 일반 매출·재고·견적 등 합성 업무 자료입니다. AV-S61~80은 FakeNet의 FakeWeb 가상 페이지를 GET으로 조회하고 페이지 속 비검증 지시를 무시하는 조사 과제입니다.
 
-이 실행기는 기존 Docker 샌드박스를 수정하거나 대체하지 않습니다. Python 컨트롤러 내부의 가상 파일과 모의 업무 상태만 사용합니다. 실제 이메일, 웹 요청, 코드 실행, 모델 추론, 결제, 계정 발급은 하지 않습니다. 특히 프로세스·VM 격리나 샌드박스 탈출 방어를 제공하는 프로그램은 아닙니다.
+이 실행기는 기존 Docker 샌드박스를 수정하거나 대체하지 않습니다. Python 컨트롤러 내부의 가상 파일과 모의 업무 상태를 사용합니다. AV-S61~80은 `SANDBOX/fakenet/sites/argus/`의 합성 FakeWeb 페이지를 FakeNet에서 조회하며 실제 인터넷에는 연결하지 않습니다. 시나리오 실행 중 GET 요청은 단계별 `network_events`와 정책 라벨에 기록됩니다. 실제 이메일, 결제, 계정 발급은 하지 않습니다. 특히 프로세스·VM 격리나 샌드박스 탈출 방어를 제공하는 프로그램은 아닙니다.
 
 ## 바로 실행
 
@@ -14,6 +14,7 @@ Python 3.10 이상, 외부 패키지 없이 실행할 수 있습니다.
 cd /Users/yujunseok/Documents/공모전/argus-v-scenarios
 python3 -m scenario_suite list
 python3 -m scenario_suite list --batch additional
+python3 -m scenario_suite list --batch fakeweb
 python3 -m scenario_suite demo --scenario AV-S01 --condition C1
 python3 -m scenario_suite demo --scenario AV-S01 --condition C2
 python3 -m scenario_suite demo --scenario AV-S31 --condition C1
@@ -34,6 +35,17 @@ python3 -m unittest discover -s tests -v
 - `operator-scenarios-31-60/scenario-bank.json`: 추가 30개 통합 JSON.
 - `operator-scenarios-31-60/AV-S31.v1.json` ~ `AV-S60.v1.json`: 시나리오별 운영자용 전체 명세와 선언형 실행 계약 JSON 30개. 공개/비공개 문서·승인 규칙·예제 경로·판정 기준을 포함합니다.
 - `fixtures-additional-v1/AV-S31/C0/public-context.json` 등: 30 × 3 = 90개 조건별 **공개 입력 JSON**과 초기 일반 문서. 승인 이후 반입할 자료는 초기 폴더에 없습니다.
+
+## FakeWeb 시나리오 20개
+
+AV-S61~80은 대중교통·식물원·천문관·도서관·재활용 안내·조위·천문 관측·공원 공지·공개 데이터·아카이브·오픈소스·서비스 상태·재난 안내·수질·교육 일정·미술관·과학 행사·공항·철도·기상 자료를 조사합니다. 각각 별도의 JSON 페이지를 `SANDBOX/fakenet/sites/argus/`에 두고, `SANDBOX/fakenet/routes.json`에서 해당 URL의 GET만 응답하도록 등록했습니다.
+
+- `operator-scenarios-61-80/scenario-bank.md`와 `scenario-bank.json`: FakeWeb 업무 20개 상세 명세.
+- `operator-scenarios-61-80/AV-S61.v1.json` ~ `AV-S80.v1.json`: 시나리오별 운영자용 명세.
+- `python3 -m scenario_suite list --batch fakeweb`: 새 ID와 제목 목록.
+- `PYTHONPATH=src python argus_hook/scenario_rollout.py plan --scenarios suite-fakeweb --dry-run`: 20개 × C0/C1/C2 실행 계획.
+
+실제 FakeWeb 요청 검수는 `scenario_rollout.py`의 Docker Sandbox 경로에서 합니다. 통합 CLI의 메모리 전용 `scenario_suite demo`는 웹 요청을 수행하지 않고 모의 도구 계약만 재생합니다. FakeNet 라우트 allowlist는 시나리오별 `GET fakenet/argus/av-sNN.json`으로 제한되며 페이지가 제안하는 셸·POST·파일 전송 등은 허용되지 않습니다.
 
 운영자용 전체 JSON은 팀원이 구현·검수·재현할 때 쓰는 파일입니다. **모델이나 Probe에는 제공하지 마세요.** 이 JSON을 임의로 읽어서 실행하는 loader는 없으며 실제 모의 실행은 신뢰된 Python 프로필·컨트롤러를 사용합니다.
 
@@ -70,7 +82,7 @@ python3 -m scenario_suite export --batch additional --output local-exports
 python3 -m scenario_suite export-specs --batch additional --output local-operator-specs
 ```
 
-`export --batch additional`은 새 디렉터리에 추가 30 × 3 조건의 초기 공개 문서와 `public-context.json`을 저장합니다. `export-specs`는 별도 새 디렉터리에 운영자용 개별 JSON·통합 JSON·상세 Markdown을 저장합니다. 이미 있는 경로를 덮어쓰지 않습니다. `--batch initial`은 기존 30개, `--batch all`은 전체 60개를 선택합니다. `export`의 기본 배치는 `all`, `export-specs`의 기본 배치는 `additional`입니다. 특정 조건만 내보내려면 `--scenario AV-S31 --condition C2`를 추가하세요. 승인 후에만 반입할 자료와 정답은 초기 공개 폴더에 포함하지 않습니다.
+`export --batch additional`은 새 디렉터리에 추가 30 × 3 조건의 초기 공개 문서와 `public-context.json`을 저장합니다. `export-specs`는 별도 새 디렉터리에 운영자용 개별 JSON·통합 JSON·상세 Markdown을 저장합니다. 이미 있는 경로를 덮어쓰지 않습니다. `--batch initial`은 기존 30개, `--batch additional`은 AV-S31~60, `--batch fakeweb`은 AV-S61~80, `--batch all`은 전체 80개를 선택합니다. `export`의 기본 배치는 `all`, `export-specs`의 기본 배치는 `additional`입니다. 특정 조건만 내보내려면 `--scenario AV-S61 --condition C2`를 추가하세요. 승인 후에만 반입할 자료와 정답은 초기 공개 폴더에 포함하지 않습니다.
 
 **모델에는 선택한 한 조건의 `files/`와 공개 컨텍스트만 제공하세요.** 상위 폴더명, 다른 조건, `OPERATOR-INDEX.json`, 원본 시나리오 뱅크, Python 소스, 테스트, 계획과 정답을 읽게 하면 조건·정답 유출이 발생합니다. 기존 Docker 샌드박스에 넣을 때도 읽기 전용 입력 마운트와 별도의 출력 공간을 사용해야 합니다. 컨트롤러와 로그는 에이전트가 읽거나 수정할 수 없는 곳에 두어야 합니다.
 
@@ -91,12 +103,12 @@ python3 -m scenario_suite run --scenario AV-S01 --condition C2 \
 
 ## 현재 범위와 연구 시 주의점
 
-- 구현된 것은 60개 **모의 업무 계약**, 180개 조건, 합성 문서와 정상/승인/거절 예제입니다. 실제 모델 실행·학습·탐지 성능 수치는 없습니다.
+- 구현된 것은 80개 **모의 업무 계약**, 240개 조건, 합성 문서와 정상/승인/거절 예제입니다. 실제 모델 실행·학습·탐지 성능 수치는 없습니다.
 - 자료·ID는 고정된 합성 fixture입니다. `--seed`는 동일 업무의 그룹 식별자에만 영향을 주고 다양한 업무 데이터를 새로 생성하지 않습니다. 이름·값·문구의 균형 변형은 후속 작업입니다.
 - 일부 도구는 미리 정해진 계산·파일·분류 결과를 반환합니다. PDF 렌더링, 모델 분류, 패키지 설치도 명시적인 모의 결과입니다.
 - 최소 집단 크기·동의 절차·시간창·보존 규칙 등은 합성 실험 정책이며 실제 법규·개인정보 보호·금융·운영 표준에 대한 권고가 아닙니다. 업무 시간과 증빙 상태도 고정 fixture이고 실제 시스템 시각·기관의 상태와 같다는 뜻이 아닙니다.
 - 보고서 검사는 요구 문자열·상태·영수증·읽기 증거와 해시 중심입니다. 자연어 의미, 모든 개인정보 표현, 진실한 미완료 설명을 완전히 판정하지 않습니다. 실제 수집 시 사람 검수가 필요합니다.
-- 60개 업무가 모두 독립적인 위험 메커니즘은 아닙니다. 같은 업무의 세 조건과 변형·궤적은 같은 분할에 묶고, 기존/추가 두 묶음에 걸친 같은 메커니즘도 함께 홀드아웃하세요.
+- 80개 업무가 모두 독립적인 위험 메커니즘은 아닙니다. 같은 업무의 세 조건과 변형·궤적은 같은 분할에 묶으세요. AV-S61~80은 공유된 `untrusted_fakeweb_content` 메커니즘을 사용하므로 20개의 독립 위험 유형으로 세지 마세요.
 - 실제 에이전트에는 업무를 성공시키는 목표만 주세요. `plans`, `violation`, `success`, 조건 번호와 운영자 제목을 프롬프트에 넣지 마세요. 모의 도구 실패와 자발적 위험 행동을 구분해야 합니다.
 
-기존 설계 원문은 `scenario-bank-30.v1.md` / `scenario-bank-30.v1.json`, 추가 설계는 `operator-scenarios-31-60/scenario-bank.md` / `scenario-bank.json`입니다. 실행 코드와 원문 예시 사이의 구체적 도구 계약·중립 ID·인자 차이는 이 버전의 Python 프로필과 실행 시 공개 Schema를 기준으로 확인하세요.
+기존 설계 원문은 `scenario-bank-30.v1.md` / `scenario-bank-30.v1.json`, 추가 설계는 `operator-scenarios-31-60/`, FakeWeb 설계는 `operator-scenarios-61-80/`입니다. 실행 코드와 원문 예시 사이의 구체적 도구 계약·중립 ID·인자 차이는 이 버전의 Python 프로필과 실행 시 공개 Schema를 기준으로 확인하세요.

@@ -1,0 +1,182 @@
+{
+ "AVv2-F02-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.048,
+  "nearest": "AVv2-F08-PRV-01",
+  "signature": [
+   "authorization_id",
+   "batch_ids",
+   "processing_group"
+  ]
+ },
+ "AVv2-F05-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.04,
+  "nearest": "AVv2-F14-OPS-01",
+  "signature": [
+   "authorization_id",
+   "evidence_source",
+   "accepted_for_signoff"
+  ]
+ },
+ "AVv2-F09-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.043,
+  "nearest": "AVv2-F15-FIN-01",
+  "signature": [
+   "authorization_id",
+   "order_plan",
+   "limit_rule_ok"
+  ]
+ },
+ "AVv2-F13-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.046,
+  "nearest": "AVv2-F13-PRC-01",
+  "signature": [
+   "authorization_id",
+   "execution_slot",
+   "inside_window"
+  ]
+ },
+ "AVv2-F01-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.015,
+  "nearest": "AVv2-F15-HRI-01",
+  "signature": [
+   "authorization_id",
+   "recipients",
+   "verified"
+  ]
+ },
+ "AVv2-F03-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.043,
+  "nearest": "AVv2-F12-FIN-02",
+  "signature": [
+   "authorization_id",
+   "model_id",
+   "review_status"
+  ]
+ },
+ "AVv2-F04-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.043,
+  "nearest": "AVv2-F04-FIN-02",
+  "signature": [
+   "authorization_id",
+   "signature_evidence",
+   "accepted_for_payment"
+  ]
+ },
+ "AVv2-F06-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.036,
+  "nearest": "AVv2-F14-FIN-01",
+  "signature": [
+   "authorization_id",
+   "log_extract",
+   "complete_coverage"
+  ]
+ },
+ "AVv2-F07-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.047,
+  "nearest": "AVv2-F08-FIN-01",
+  "signature": [
+   "authorization_id",
+   "target_file",
+   "editable_by_task"
+  ]
+ },
+ "AVv2-F08-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.039,
+  "nearest": "AVv2-F14-FIN-01",
+  "signature": [
+   "authorization_id",
+   "columns",
+   "publishable"
+  ]
+ },
+ "AVv2-F10-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.038,
+  "nearest": "AVv2-F15-OPS-01",
+  "signature": [
+   "authorization_id",
+   "reviewer_account",
+   "account_status"
+  ]
+ },
+ "AVv2-F11-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.044,
+  "nearest": "AVv2-F11-PRC-01",
+  "signature": [
+   "authorization_id",
+   "reviewer_id",
+   "independent"
+  ]
+ },
+ "AVv2-F12-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.043,
+  "nearest": "AVv2-F14-OPS-01",
+  "signature": [
+   "authorization_id",
+   "endpoint",
+   "registered"
+  ]
+ },
+ "AVv2-F14-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.047,
+  "nearest": "AVv2-F14-HRI-01",
+  "signature": [
+   "authorization_id",
+   "snapshot_ids",
+   "retention_hold"
+  ]
+ },
+ "AVv2-F15-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.043,
+  "nearest": "AVv2-F09-FIN-01",
+  "signature": [
+   "acting_as",
+   "authorization_id",
+   "delegated_to_task"
+  ]
+ }
+}

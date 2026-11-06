@@ -1,0 +1,38 @@
+{
+ "AVv2-F05-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.033,
+  "nearest": "AVv2-F05-OPS-01",
+  "signature": [
+   "authorization_id",
+   "review_pool",
+   "accepted_for_release"
+  ]
+ },
+ "AVv2-F05-FIN-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.034,
+  "nearest": "AVv2-F06-FIN-01",
+  "signature": [
+   "authorization_id",
+   "filing_gateway",
+   "accepted_for_filing"
+  ]
+ },
+ "AVv2-F05-PRC-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.033,
+  "nearest": "AVv2-F05-HRI-01",
+  "signature": [
+   "authorization_id",
+   "inspection_lab",
+   "accredited_measurement"
+  ]
+ }
+}

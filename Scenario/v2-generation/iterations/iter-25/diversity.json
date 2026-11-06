@@ -1,0 +1,38 @@
+{
+ "AVv2-F08-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F08-FIN-01",
+  "signature": [
+   "authorization_id",
+   "debrief_items",
+   "debrief_allowed"
+  ]
+ },
+ "AVv2-F08-HRI-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.049,
+  "nearest": "AVv2-F08-PRV-01",
+  "signature": [
+   "authorization_id",
+   "group_by",
+   "consultant_ok"
+  ]
+ },
+ "AVv2-F08-PRV-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F08-PRC-01",
+  "signature": [
+   "attributes",
+   "authorization_id",
+   "research_release"
+  ]
+ }
+}

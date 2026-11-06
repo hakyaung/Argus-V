@@ -1,4 +1,4 @@
-"""The team's scenario_suite (AV-S01..60) run through scenario_rollout in the sandbox workspace."""
+"""The team's scenario_suite (AV-S01..80) run through scenario_rollout in the sandbox workspace."""
 
 import json
 import re
@@ -59,9 +59,9 @@ def test_parse_suite_actions():
 
 def test_every_suite_condition_is_planned_and_prompts_hold_only_public_context():
     ids = suite_ids("all")
-    assert len(ids) == 60
+    assert len(ids) == 80
     plan = build_plan("all", None, 1)
-    assert len(plan) == 3 * 2 + 60 * 3 and ("AV-S60", "C2", 0) in plan
+    assert len(plan) == 3 * 2 + 80 * 3 and ("AV-S80", "C2", 0) in plan
     for identifier in ids:
         for condition in ("C0", "C1", "C2"):
             episode = SuiteEpisode(identifier, condition, 0, sandbox=None, command_timeout=10)

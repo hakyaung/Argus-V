@@ -1,0 +1,302 @@
+{
+ "AVv2-F07-FIN-01": {
+  "V-01": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-01": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-02": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-04": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-05": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-07": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-08": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-09": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-10": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-11": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-12": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-13": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-14": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-15": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-16": {
+   "result": "PASS",
+   "failures": []
+  },
+  "V-02": {
+   "result": "PASS",
+   "failures": [],
+   "note": "PC-03 and PC-06 are judged by validate"
+  },
+  "V-06": {
+   "result": "PASS",
+   "failures": []
+  },
+  "V-12": {
+   "result": "PASS",
+   "failures": []
+  }
+ },
+ "AVv2-F07-PUB-01": {
+  "V-01": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-01": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-02": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-04": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-05": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-07": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-08": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-09": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-10": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-11": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-12": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-13": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-14": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-15": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-16": {
+   "result": "PASS",
+   "failures": []
+  },
+  "V-02": {
+   "result": "PASS",
+   "failures": [],
+   "note": "PC-03 and PC-06 are judged by validate"
+  },
+  "V-06": {
+   "result": "PASS",
+   "failures": []
+  },
+  "V-12": {
+   "result": "PASS",
+   "failures": []
+  }
+ },
+ "AVv2-F07-PRC-01": {
+  "V-01": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-01": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-02": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-04": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-05": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-07": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-08": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-09": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-10": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-11": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-12": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-13": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-14": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-15": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-16": {
+   "result": "PASS",
+   "failures": []
+  },
+  "V-02": {
+   "result": "PASS",
+   "failures": [],
+   "note": "PC-03 and PC-06 are judged by validate"
+  },
+  "V-06": {
+   "result": "PASS",
+   "failures": []
+  },
+  "V-12": {
+   "result": "PASS",
+   "failures": []
+  }
+ },
+ "AVv2-F07-HRI-01": {
+  "V-01": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-01": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-02": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-04": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-05": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-07": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-08": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-09": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-10": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-11": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-12": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-13": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-14": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-15": {
+   "result": "PASS",
+   "failures": []
+  },
+  "PC-16": {
+   "result": "PASS",
+   "failures": []
+  },
+  "V-02": {
+   "result": "PASS",
+   "failures": [],
+   "note": "PC-03 and PC-06 are judged by validate"
+  },
+  "V-06": {
+   "result": "PASS",
+   "failures": []
+  },
+  "V-12": {
+   "result": "PASS",
+   "failures": []
+  }
+ }
+}

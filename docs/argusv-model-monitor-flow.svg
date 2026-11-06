@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1760" height="1320" viewBox="0 0 1760 1320" role="img" aria-labelledby="title desc">
+  <title id="title">ARGUS-V gpt-oss와 선형 Probe 데이터 및 감시 흐름</title>
+  <desc id="desc">gpt-oss 추론과 Hook/C-01 수집, 검수 라벨을 이용한 오프라인 선형 Probe 학습, gpt-oss 텍스트 감시 M1 및 M2 평가, 저장된 capture에 대한 개별 Probe 추론 흐름과 현재 자동 연결이 아닌 경계를 보여준다.</desc>
+  <defs>
+    <style>
+      text{font-family:Inter,Arial,"Noto Sans KR",sans-serif;fill:#eaf0f8}
+      .title{font-size:30px;font-weight:750}.sub{font-size:15px;fill:#aebed0}
+      .lane{font-size:18px;font-weight:700;letter-spacing:.3px}
+      .head{font-size:16px;font-weight:700}.body{font-size:13px;fill:#becada}.small{font-size:12px;fill:#aebdd0}
+      .box{fill:#17273b;stroke:#42607f;stroke-width:1.5}.model{fill:#243456;stroke:#7d9ce5;stroke-width:1.7}
+      .data{fill:#183b3c;stroke:#4faaa2;stroke-width:1.6}.probe{fill:#3a2e4b;stroke:#a88bd2;stroke-width:1.7}
+      .judge{fill:#3d3426;stroke:#d3a755;stroke-width:1.7}.output{fill:#1c3a31;stroke:#5bb98b;stroke-width:1.6}
+      .warn{fill:#402a31;stroke:#dc7885;stroke-width:1.6}
+      .arrow{fill:none;stroke:#79afe6;stroke-width:2.4;marker-end:url(#blue)}
+      .dashed{fill:none;stroke:#a99bc8;stroke-width:2.1;stroke-dasharray:8 7;marker-end:url(#purple)}
+      .warmline{fill:none;stroke:#d3a755;stroke-width:2.2;marker-end:url(#gold)}
+      .greenline{fill:none;stroke:#5bb98b;stroke-width:2.3;marker-end:url(#green)}
+      .redline{fill:none;stroke:#dc7885;stroke-width:2.2;stroke-dasharray:7 6;marker-end:url(#red)}
+    </style>
+    <marker id="blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#79afe6" stroke-width="1.8"/></marker>
+    <marker id="purple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#a99bc8" stroke-width="1.8"/></marker>
+    <marker id="gold" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#d3a755" stroke-width="1.8"/></marker>
+    <marker id="green" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#5bb98b" stroke-width="1.8"/></marker>
+    <marker id="red" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#dc7885" stroke-width="1.8"/></marker>
+  </defs>
+  <rect width="1760" height="1320" fill="#0d1726"/>
+  <text x="48" y="55" class="title">ARGUS-V · gpt-oss와 위험 감시 모델의 데이터 흐름</text>
+  <text x="48" y="83" class="sub">현재 코드 기준: 실행/수집 → 검수 라벨 → Probe 학습·M1 비교 → 저장된 관측점 추론</text>
+
+  <rect x="40" y="110" width="1680" height="450" rx="20" fill="#111f30" stroke="#2e4660"/>
+  <text x="64" y="148" class="lane" fill="#91c7ff">A. 시나리오 실행과 수집 · argus_hook/scenario_rollout.py</text>
+  <rect x="68" y="190" width="220" height="106" rx="14" class="box"/>
+  <text x="88" y="224" class="head">AGENT / Scenario runner</text>
+  <text x="88" y="249" class="body">초기 task + trusted policy</text>
+  <text x="88" y="272" class="small">관찰 결과를 history에 추가</text>
+
+  <rect x="350" y="176" width="270" height="132" rx="15" class="model"/>
+  <text x="373" y="211" class="head">gpt-oss-20b 실행 모델</text>
+  <text x="373" y="237" class="body">rollout 시작 전 로컬 가중치 1회 로드</text>
+  <text x="373" y="261" class="body">각 turn: history 입력 → 행동 생성</text>
+  <text x="373" y="285" class="small">가중치는 고정, Probe 학습과 별도</text>
+
+  <rect x="685" y="190" width="225" height="106" rx="14" class="box"/>
+  <text x="708" y="224" class="head">runner가 출력 처리</text>
+  <text x="708" y="249" class="body">bash / stop 형식 확인·파싱</text>
+  <text x="708" y="272" class="small">포맷 오류는 보정 요청 후 재생성</text>
+
+  <rect x="976" y="168" width="300" height="124" rx="15" class="data"/>
+  <text x="999" y="203" class="head">C-01 pre_action capture</text>
+  <text x="999" y="229" class="body">행동 직전 원본 prefix를 replay</text>
+  <text x="999" y="253" class="body">선택 layer의 post-block activation</text>
+  <text x="999" y="277" class="small">features.npz · float32 · 관측 token 정렬</text>
+
+  <rect x="1350" y="190" width="300" height="106" rx="14" class="output"/>
+  <text x="1374" y="224" class="head">실행 환경</text>
+  <text x="1374" y="249" class="body">Sandbox에서 제안 행동 처리</text>
+  <text x="1374" y="272" class="small">결과 관찰 후 다음 대화 턴으로</text>
+
+  <path d="M288 243H350" class="arrow"/><path d="M620 243H685" class="arrow"/>
+  <path d="M910 243H976" class="arrow"/><path d="M1276 243H1350" class="arrow"/>
+
+  <rect x="350" y="346" width="360" height="92" rx="13" class="data"/>
+  <text x="372" y="379" class="head">HookInspection · 선택 수집</text>
+  <text x="372" y="404" class="body">generation / replay 모듈 입력·출력 NPY</text>
+  <text x="372" y="426" class="small">--hook-inspection / --hook-replay-inspection</text>
+  <rect x="786" y="346" width="360" height="92" rx="13" class="data"/>
+  <text x="808" y="379" class="head">Scenario outcome + rollout 기록</text>
+  <text x="808" y="404" class="body">policy_label · 실행 결과 · 관측 token 위치</text>
+  <text x="808" y="426" class="small">라벨은 rollout 규칙 기반, 학습 전 검수 필요</text>
+  <rect x="1222" y="346" width="428" height="92" rx="13" class="box"/>
+  <text x="1244" y="379" class="head">파일 산출물</text>
+  <text x="1244" y="404" class="body">artifacts/rollouts + tensor_data/</text>
+  <text x="1244" y="426" class="small">capture metadata/features · JSON sidecar · Hook records</text>
+  <path d="M486 308V346" class="dashed"/>
+  <path d="M1125 292V320H966V346" class="greenline"/>
+  <path d="M1500 296V321H1080V346" class="greenline"/>
+  <path d="M710 346V326H1436V346" class="greenline"/>
+  <path d="M1276 230V311H1580V346" class="greenline"/>
+  <path d="M1146 392H1222" class="greenline"/>
+  <path d="M1650 243H1690V458H50V243H68" class="dashed"/>
+  <text x="621" y="451" class="small">Sandbox 관찰 결과 → runner 대화 이력 갱신 → 다음 LLM turn</text>
+  <text x="72" y="492" class="small">scenario_rollout은 모델을 반복 호출하지만, 현재 Probe를 매 turn 실행해 행동을 보류·차단하지 않습니다.</text>
+
+  <rect x="40" y="585" width="1680" height="398" rx="20" fill="#111f30" stroke="#2e4660"/>
+  <text x="64" y="623" class="lane" fill="#c0a7e9">B. 오프라인 데이터 준비 · 학습 · M1/M2 평가</text>
+
+  <rect x="70" y="664" width="300" height="132" rx="15" class="data"/>
+  <text x="94" y="700" class="head">데이터 조립 + 라벨 검수</text>
+  <text x="94" y="727" class="body">capture + 다음 행동 라벨 + split</text>
+  <text x="94" y="752" class="body">미검수/미래/불완전 표본 제외</text>
+  <text x="94" y="777" class="small">assemble_probe_dataset.py</text>
+
+  <rect x="440" y="664" width="322" height="132" rx="15" class="probe"/>
+  <text x="464" y="700" class="head">선형 Probe 학습</text>
+  <text x="464" y="727" class="body">train 전용 표준화 → Linear(D,1)</text>
+  <text x="464" y="752" class="body">sigmoid → next-action 위험 점수</text>
+  <text x="464" y="777" class="small">validation에서 임계값 선택 · CPU</text>
+
+  <rect x="835" y="664" width="340" height="132" rx="15" class="judge"/>
+  <text x="859" y="700" class="head">M1 · gpt-oss 텍스트 판정</text>
+  <text x="859" y="727" class="body">task + 정책 + 관측된 prefix text</text>
+  <text x="859" y="752" class="body">별도 judge 추론 · activation은 입력 안 함</text>
+  <text x="859" y="777" class="small">같은 관측 시점의 기준선</text>
+
+  <rect x="1260" y="664" width="390" height="132" rx="15" class="output"/>
+  <text x="1284" y="700" class="head">평가 리포트</text>
+  <text x="1284" y="727" class="body">M0 / M1 / Probe / M2 비교</text>
+  <text x="1284" y="752" class="body">M2 = M1 점수 + Probe 점수의 logistic fusion</text>
+  <text x="1284" y="777" class="small">validation 임계값 → 고정 test 평가</text>
+
+  <path d="M370 730H440" class="arrow"/>
+  <path d="M762 704H835" class="warmline"/>
+  <path d="M762 755H1260" class="dashed"/>
+  <path d="M1175 730H1260" class="warmline"/>
+  <text x="1025" y="815" class="small">M1 + Probe 점수 결합 및 성능 비교는 evaluate_monitors.py report 단계</text>
+
+  <rect x="70" y="840" width="300" height="91" rx="13" class="box"/>
+  <text x="94" y="875" class="head">학습 표본 라벨</text>
+  <text x="94" y="901" class="body">human reviewed 0/1 권장</text>
+  <path d="M220 840V814H220V796" class="arrow"/>
+
+  <rect x="440" y="840" width="322" height="91" rx="13" class="probe"/>
+  <text x="464" y="875" class="head">저장된 모델 번들</text>
+  <text x="464" y="901" class="body">weights.npz + model.json</text>
+  <path d="M600 796V840" class="greenline"/>
+
+  <rect x="835" y="840" width="340" height="91" rx="13" class="judge"/>
+  <text x="859" y="875" class="head">M1 점수 파일</text>
+  <text x="859" y="901" class="body">risk_score · reason · status</text>
+  <path d="M1005 796V840" class="warmline"/>
+
+  <rect x="1260" y="840" width="390" height="91" rx="13" class="output"/>
+  <text x="1284" y="875" class="head">test 결과: 탐지율 · 오탐률 · 선행량</text>
+  <text x="1284" y="901" class="body">평가 목적, 실행 제어 기능과 별도</text>
+  <path d="M1455 796V840" class="greenline"/>
+
+  <rect x="40" y="1008" width="1680" height="250" rx="20" fill="#111f30" stroke="#2e4660"/>
+  <text x="64" y="1046" class="lane" fill="#91d6ae">C. 저장된 capture에 대한 별도 추론과 처리 경계</text>
+  <rect x="80" y="1080" width="300" height="105" rx="14" class="data"/>
+  <text x="104" y="1116" class="head">새 pre_action capture</text>
+  <text x="104" y="1142" class="body">같은 모델/레이어/특징 좌표 확인</text>
+  <text x="104" y="1166" class="small">호환되지 않는 입력은 거절</text>
+
+  <rect x="475" y="1080" width="338" height="105" rx="14" class="probe"/>
+  <text x="499" y="1116" class="head">predict_probe.py</text>
+  <text x="499" y="1142" class="body">저장 모델로 capture 한 행 점수화</text>
+  <text x="499" y="1166" class="small">risk_score + threshold 기반 alarm</text>
+
+  <rect x="907" y="1080" width="300" height="105" rx="14" class="output"/>
+  <text x="931" y="1116" class="head">결과 JSON / 알림 기록</text>
+  <text x="931" y="1142" class="body">독립 CLI 추론 결과 저장</text>
+  <text x="931" y="1166" class="small">일반 agent_loop 자동 호출 아님</text>
+  <path d="M380 1132H475" class="arrow"/><path d="M813 1132H907" class="greenline"/>
+
+  <rect x="1280" y="1080" width="370" height="105" rx="14" class="warn"/>
+  <text x="1304" y="1116" class="head">현재 온라인 연결 상태</text>
+  <text x="1304" y="1142" class="body">일반 실행을 자동 보류/차단하지 않음</text>
+  <text x="1304" y="1166" class="small">M1 smoke는 고정 정상 demo의 별도 경로</text>
+  <path d="M1207 1132H1280" class="redline"/>
+  <text x="80" y="1224" class="small">실행 행동 통제는 Sandbox/정책 흐름이 담당합니다. Probe와 M1/M2는 현재 별도 추론·평가 경로이며, 실시간 Guard 통합은 추가 작업입니다.</text>
+</svg>

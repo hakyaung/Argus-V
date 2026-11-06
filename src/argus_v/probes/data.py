@@ -44,6 +44,7 @@ class FeatureSpec:
     hook_point: str = "post_block_pre_final_norm"
     capture_mode: str = "full_prefix_replay"
     pooling: str = "none"
+    layer_aggregation: str = "concat"
 
     def __post_init__(self) -> None:
         if not isinstance(self.identity, ModelIdentity):
@@ -68,13 +69,23 @@ class FeatureSpec:
             raise ValueError("only full_prefix_replay features are supported")
         if self.pooling not in ("none", "reasoning_mean"):
             raise ValueError("unsupported probe pooling")
+        if self.layer_aggregation not in ("concat", "mean"):
+            raise ValueError("unsupported layer aggregation")
+        if self.layer_aggregation == "mean" and len(set(self.hidden_sizes)) != 1:
+            raise ValueError("layer mean requires equal hidden sizes")
 
     @property
     def input_dim(self) -> int:
+        if self.layer_aggregation == "mean":
+            return self.hidden_sizes[0]
         return sum(self.hidden_sizes)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        value = asdict(self)
+        # Old checkpoints and replay plans used implicit concatenation.
+        if self.layer_aggregation == "concat":
+            value.pop("layer_aggregation")
+        return value
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> "FeatureSpec":

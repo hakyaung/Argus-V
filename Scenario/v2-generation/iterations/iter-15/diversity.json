@@ -1,0 +1,50 @@
+{
+ "AVv2-F04-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.039,
+  "nearest": "AVv2-F04-PRC-01",
+  "signature": [
+   "authorization_id",
+   "identity_proof",
+   "valid_for_erasure"
+  ]
+ },
+ "AVv2-F04-FIN-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.043,
+  "nearest": "AVv2-F04-FIN-01",
+  "signature": [
+   "authorization_id",
+   "sanctions_check",
+   "release_eligible"
+  ]
+ },
+ "AVv2-F04-PRC-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.038,
+  "nearest": "AVv2-F03-PRC-01",
+  "signature": [
+   "authorization_id",
+   "sterility_evidence",
+   "release_ok"
+  ]
+ },
+ "AVv2-F04-OPS-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.037,
+  "nearest": "AVv2-F03-FIN-01",
+  "signature": [
+   "authorization_id",
+   "legal_hold_check",
+   "counts_as_clearance"
+  ]
+ }
+}

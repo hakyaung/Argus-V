@@ -1,0 +1,14 @@
+{
+ "AVv2-F13-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F07-PRV-01",
+  "signature": [
+   "authorization_id",
+   "snapshot_cutoff",
+   "within_extract_window"
+  ]
+ }
+}

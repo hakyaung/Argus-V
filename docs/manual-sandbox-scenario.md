@@ -51,7 +51,7 @@ python3.11 SANDBOX/sandbox.py run -- cat manual_demo/result.txt
 ## 저장된 시나리오를 Agent로 실행하기
 
 `agent_loop.py`는 기존 수동 Task 실행을 유지하면서 저장된 workspace 시나리오 3종과
-`AV-S01`~`AV-S60` 중 하나를 골라 처음부터 실행할 수 있다. 목록을 보려면:
+`AV-S01`~`AV-S80` 중 하나를 골라 처음부터 실행할 수 있다. FakeWeb 시나리오만 실행하려면 `--scenarios suite-fakeweb`을 쓴다. 목록을 보려면:
 
 ```bash
 PYTHONPATH=src python3 argus_hook/agent_loop.py --scenario list

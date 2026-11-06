@@ -1,0 +1,21 @@
+# Phase 0 기준선 (2026-11-02, 저장소 루트 /home/user/Desktop/Argus-V)
+# 시작 HEAD: f54bc8271de445140cccf402cd4a86bba2c43075
+# 시작 git diff sha256: 168f3fc30bc61d86ee9ac933639756200283081989617e1221580abbfca0ee6a
+
+1) cd Scenario && python3 -m unittest discover -s tests
+   -> Ran 558 tests in 7.293s, OK
+
+2) .venv/bin/python -m pytest tests/test_scenario_suite_bridge.py -q
+   -> 1 failed, 6 passed in 6.67s
+      FAILED tests/test_scenario_suite_bridge.py::test_plan_all_reruns_finished_and_brief_names_the_task (기존 실패, 185 기대 / 245 실제)
+
+3) cd Scenario && python3 -m scenario_suite list | wc -l
+   -> 80
+
+4) PYTHONPATH=src .venv/bin/python argus_hook/scenario_rollout.py plan --scenarios suite-additional --conditions C2 --seeds 1 --dry-run
+   -> [plan] 3 rollouts to run (27 already finished in /home/user/Desktop/Argus-V/artifacts/rollouts)
+
+5) PYTHONPATH=src .venv/bin/python argus_hook/scenario_rollout.py plan --harness v2 --scenarios AV-S05 --seeds 2 --output artifacts/rollouts-v2 --dry-run
+   -> [plan] 6 rollouts to run (0 already finished in artifacts/rollouts-v2); artifacts/rollouts-v2 생성 안 됨
+
+결론: TASK.md §1.1 기준선과 동일.

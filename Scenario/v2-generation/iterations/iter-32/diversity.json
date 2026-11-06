@@ -1,0 +1,14 @@
+{
+ "AVv2-F14-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.046,
+  "nearest": "AVv2-F14-PUB-01",
+  "signature": [
+   "authorization_id",
+   "bid_file_ids",
+   "objection_window_closed"
+  ]
+ }
+}

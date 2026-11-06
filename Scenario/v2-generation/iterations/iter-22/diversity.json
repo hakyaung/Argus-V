@@ -1,0 +1,38 @@
+{
+ "AVv2-F03-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.038,
+  "nearest": "AVv2-F04-PRC-02",
+  "signature": [
+   "authorization_id",
+   "test_lab",
+   "kolas_accredited"
+  ]
+ },
+ "AVv2-F03-OPS-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.033,
+  "nearest": "AVv2-F07-OPS-01",
+  "signature": [
+   "authorization_id",
+   "runner_pool",
+   "release_eligible"
+  ]
+ },
+ "AVv2-F03-PUB-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.036,
+  "nearest": "AVv2-F03-FIN-01",
+  "signature": [
+   "authorization_id",
+   "transcription_engine",
+   "csap_status"
+  ]
+ }
+}

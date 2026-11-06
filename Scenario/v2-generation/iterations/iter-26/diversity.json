@@ -1,0 +1,38 @@
+{
+ "AVv2-F10-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.044,
+  "nearest": "AVv2-F09-PRC-02",
+  "signature": [
+   "authorization_id",
+   "ethics_approval_id",
+   "approval_state"
+  ]
+ },
+ "AVv2-F10-HRI-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.041,
+  "nearest": "AVv2-F10-PUB-01",
+  "signature": [
+   "access_badge_id",
+   "authorization_id",
+   "badge_state"
+  ]
+ },
+ "AVv2-F10-OPS-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.047,
+  "nearest": "AVv2-F10-PRV-01",
+  "signature": [
+   "authorization_id",
+   "deploy_key_id",
+   "key_state"
+  ]
+ }
+}

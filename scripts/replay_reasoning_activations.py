@@ -1,7 +1,7 @@
 """Replay saved train/validation token IDs locally; no generation or sandbox execution.
 
-Save only the selected block's full-prefix output in a resumable Hook-compatible
-directory. Every replay must exactly reproduce all stored C-01 observation rows.
+The CLI stores small float32 per-layer summaries by default. --storage full keeps
+legacy full-prefix tensors. Every replay must reproduce original C-01 rows.
 """
 
 import argparse
@@ -17,7 +17,18 @@ def write_json(path, value):
     temporary.replace(path)
 
 
-def replay(root, run_dir, output, model_dir, *, layer=23, max_actions=None, adapter=None):
+def replay(
+    root,
+    run_dir,
+    output,
+    model_dir,
+    *,
+    layer=23,
+    layers=None,
+    max_actions=None,
+    adapter=None,
+    storage="full",
+):
     sys.path.insert(0, str(root / "src"))
     import numpy as np
     import torch
@@ -29,10 +40,14 @@ def replay(root, run_dir, output, model_dir, *, layer=23, max_actions=None, adap
         SnapshotContext,
         extract_prefix,
     )
-    from argus_v.probes import load_probe, load_probe_dataset
+    from argus_v.probes import load_probe
     from argus_v.probes.data import file_sha256
-    from argus_v.probes.reasoning import read_json, reasoning_span
+    from argus_v.probes.pooled import PHASE, read_pooled, token_mean, write_pooled
+    from argus_v.probes.reasoning import read_json, reasoning_span, resolve_layers, source_views
 
+    layers = resolve_layers(layer, layers)
+    if storage not in ("full", "pooled"):
+        raise ValueError("storage must be full or pooled")
     if max_actions is not None and max_actions < 1:
         raise ValueError("max-actions must be positive")
     baseline = load_probe(run_dir / "model")
@@ -43,14 +58,11 @@ def replay(root, run_dir, output, model_dir, *, layer=23, max_actions=None, adap
         or baseline.spec.pooling != "none"
     ):
         raise ValueError("expected the unchanged original reviewed run")
-    views = {
-        split: load_probe_dataset(manifest, split=split, layers=(layer,))
-        for split in ("train", "validation")
-    }
-    for split, dataset in views.items():
-        if dataset.fingerprint != baseline.training_report[f"{split}_fingerprint"]:
-            raise ValueError(f"{split} source fingerprint changed")
+    views = source_views(manifest, baseline, layers)
     spec = views["train"].spec
+    filenames = {
+        layer: "block.npy" if len(layers) == 1 else f"block_{layer:04d}.npy" for layer in layers
+    }
     plan = {
         "schema_version": "argus-v.reasoning-replay-plan.v1",
         "source_manifest": str(manifest),
@@ -85,13 +97,28 @@ def replay(root, run_dir, output, model_dir, *, layer=23, max_actions=None, adap
             done = folder / "manifest.json"
             if done.exists():
                 saved = read_json(done)
+                if saved.get("phase") == PHASE:
+                    if saved.get("selected_layers") != list(layers):
+                        raise ValueError(f"completed pooled layer layout changed: {folder}")
+                    read_pooled(done, saved, meta, spec, span, capture)
+                    completed.append(record["action_id"])
+                    continue
+                artifacts = (
+                    {"block.npy": saved.get("artifact_sha256")}
+                    if len(layers) == 1
+                    else saved.get("artifacts_sha256", {})
+                )
                 if (
                     saved.get("schema_version") != "argus-v.hook-inspection.v1"
                     or saved.get("status") != "complete"
                     or saved.get("source_c01_archive_sha256") != meta["artifact"]["sha256"]
                     or saved.get("context", {}).get("run_id") != record["run_id"]
                     or saved.get("prefix_ids_sha256") != meta["prefix_ids_sha256"]
-                    or saved.get("artifact_sha256") != file_sha256(folder / "block.npy")
+                    or saved.get("selected_layers") != list(layers)
+                    or set(artifacts) != set(filenames.values())
+                    or any(
+                        artifacts[name] != file_sha256(folder / name) for name in filenames.values()
+                    )
                     or saved.get("records_sha256") != file_sha256(folder / "records.jsonl")
                 ):
                     raise ValueError(f"completed replay changed: {folder}")
@@ -122,7 +149,7 @@ def replay(root, run_dir, output, model_dir, *, layer=23, max_actions=None, adap
         )
         if adapter.identity != spec.identity or adapter.model_type != spec.model_type:
             raise ValueError("loaded model identity/type differs from original")
-        if adapter.block_paths[layer] != spec.module_paths[0]:
+        if tuple(adapter.block_paths[layer] for layer in layers) != spec.module_paths:
             raise ValueError("loaded block path differs from original")
         print(
             f"Replaying {number}/{len(selected)}: {record['action_id']} ({len(ids)} tokens)",
@@ -132,31 +159,53 @@ def replay(root, run_dir, output, model_dir, *, layer=23, max_actions=None, adap
             adapter,
             torch.tensor([ids], device=adapter.model.get_input_embeddings().weight.device),
             context,
-            layers=(layer,),
+            layers=layers,
             token_positions=tuple(range(len(ids))),
         )
         if full.metadata["config_sha256"] != spec.config_sha256:
             raise ValueError("loaded model configuration differs from original C-01")
-        values = full.features[f"block_{layer:04d}"].numpy()
         positions = [row["token_index"] for row in meta["alignment"]]
         with np.load(capture / "features.npz", allow_pickle=False) as archive:
-            if not np.array_equal(values[positions], archive[f"block_{layer:04d}"]):
-                raise ValueError(
-                    f"replay differs from original C-01 at {record['action_id']}; "
-                    "use the original checkpoint/runtime, not a newly generated trajectory"
-                )
+            for layer in layers:
+                values = full.features[f"block_{layer:04d}"].numpy()
+                if not np.array_equal(values[positions], archive[f"block_{layer:04d}"]):
+                    raise ValueError(
+                        f"replay differs from original C-01 at {record['action_id']} "
+                        f"layer {layer}; "
+                        "use the original checkpoint/runtime, not a newly generated trajectory"
+                    )
         folder.mkdir(parents=True, exist_ok=True)
-        np.save(folder / "block.npy", values[None], allow_pickle=False)
-        row = {
-            "kind": "tensor",
-            "module": spec.module_paths[0],
-            "layer_index": layer,
-            "location": "output",
-            "shape": [1, len(ids), spec.input_dim],
-            "meaning": "post-residual block output, before final norm",
-            "filename": "block.npy",
-        }
-        (folder / "records.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
+        if storage == "pooled":
+            arrays = {}
+            for layer in layers:
+                key = f"block_{layer:04d}"
+                values = full.features[key].numpy()
+                arrays[f"mean_{key}"] = token_mean(values, span)
+                arrays[f"last_{key}"] = values[-1].copy()
+                arrays[f"reference_{key}"] = values[positions].copy()
+            write_pooled(folder, meta, spec, span, capture, arrays)
+            del values, full, arrays
+            completed.append(record["action_id"])
+            continue
+        rows = []
+        for layer, size, module in zip(layers, spec.hidden_sizes, spec.module_paths, strict=True):
+            values = full.features[f"block_{layer:04d}"].numpy()
+            np.save(folder / filenames[layer], values[None], allow_pickle=False)
+            rows.append(
+                {
+                    "kind": "tensor",
+                    "module": module,
+                    "layer_index": layer,
+                    "location": "output",
+                    "shape": [1, len(ids), size],
+                    "meaning": "post-residual block output, before final norm",
+                    "filename": filenames[layer],
+                }
+            )
+        (folder / "records.jsonl").write_text(
+            "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+        )
+        hashes = {name: file_sha256(folder / name) for name in filenames.values()}
         # Publish complete metadata last; interrupted samples can be replayed.
         write_json(
             folder / "manifest.json",
@@ -166,16 +215,21 @@ def replay(root, run_dir, output, model_dir, *, layer=23, max_actions=None, adap
                 "phase": "pre_action_full_prefix_replay",
                 "identity": asdict(spec.identity),
                 "model_type": spec.model_type,
-                "selected_layers": [layer],
+                "selected_layers": list(layers),
                 "context": {**asdict(context), "input_ids": ids},
                 "prefix_ids_sha256": meta["prefix_ids_sha256"],
                 "reasoning_span": list(span),
                 "source_c01_archive_sha256": meta["artifact"]["sha256"],
-                "artifact_sha256": file_sha256(folder / "block.npy"),
+                **(
+                    {"artifact_sha256": hashes["block.npy"]}
+                    if len(layers) == 1
+                    else {"artifacts_sha256": hashes}
+                ),
                 "records_sha256": file_sha256(folder / "records.jsonl"),
             },
         )
         completed.append(record["action_id"])
+        del values, full
     summary = {
         "output": str(output),
         "completed_actions": len(completed),
@@ -183,6 +237,7 @@ def replay(root, run_dir, output, model_dir, *, layer=23, max_actions=None, adap
         "excluded_actions": len(excluded),
         "test_features_opened": False,
         "generation_performed": False,
+        "new_action_storage": storage,
         "limitation": "Excluded spans require whole-trajectory exclusion in paired comparison.",
     }
     write_json(output / "replay-summary.json", summary)
@@ -196,8 +251,18 @@ def main():
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--model-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--layer", type=int, default=23)
+    layout = parser.add_mutually_exclusive_group()
+    layout.add_argument("--layer", type=int, default=23)
+    layout.add_argument(
+        "--layers", type=int, nargs="+", help="e.g. 0 11 23; one forward per prefix"
+    )
     parser.add_argument("--max-actions", type=int)
+    parser.add_argument(
+        "--storage",
+        choices=("pooled", "full"),
+        default="pooled",
+        help="pooled: save per-layer mean/last/reference rows only; full: legacy NPYs",
+    )
     args = parser.parse_args()
     try:
         replay(
@@ -206,7 +271,9 @@ def main():
             args.output.resolve(),
             args.model_dir.resolve(),
             layer=args.layer,
+            layers=args.layers,
             max_actions=args.max_actions,
+            storage=args.storage,
         )
     except (ValueError, KeyError, TypeError, OSError, RuntimeError) as error:
         parser.exit(

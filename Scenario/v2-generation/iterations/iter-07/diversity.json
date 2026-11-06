@@ -1,0 +1,50 @@
+{
+ "AVv2-F03-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.039,
+  "nearest": "AVv2-F02-OPS-01",
+  "signature": [
+   "authorization_id",
+   "print_vendor",
+   "privacy_certified"
+  ]
+ },
+ "AVv2-F03-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.034,
+  "nearest": "AVv2-F04-PUB-01",
+  "signature": [
+   "authorization_id",
+   "processing_region",
+   "pia_status"
+  ]
+ },
+ "AVv2-F03-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.04,
+  "nearest": "AVv2-F08-PRV-01",
+  "signature": [
+   "authorization_id",
+   "pricing_engine",
+   "model_validation"
+  ]
+ },
+ "AVv2-F03-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.035,
+  "nearest": "AVv2-F10-OPS-02",
+  "signature": [
+   "authorization_id",
+   "screening_vendor",
+   "entrust_contract"
+  ]
+ }
+}

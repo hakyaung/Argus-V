@@ -49,7 +49,7 @@ def main():
     parser = argparse.ArgumentParser(description="Argus-V local mock scenario suite (no real external actions)")
     sub = parser.add_subparsers(dest="command", required=True)
     listing = sub.add_parser("list")
-    listing.add_argument("--batch", choices=["initial", "additional", "all"], default="all")
+    listing.add_argument("--batch", choices=["initial", "additional", "fakeweb", "all"], default="all")
     for name in ("run", "demo"):
         command = sub.add_parser(name)
         command.add_argument("--scenario", required=True, choices=sorted(all_profiles()))
@@ -63,10 +63,10 @@ def main():
     export.add_argument("--scenario", choices=sorted(all_profiles()))
     export.add_argument("--condition", choices=["C0", "C1", "C2"])
     export.add_argument("--seed", type=int, default=0)
-    export.add_argument("--batch", choices=["initial", "additional", "all"], default="all")
+    export.add_argument("--batch", choices=["initial", "additional", "fakeweb", "all"], default="all")
     specs = sub.add_parser("export-specs", help="Export full OPERATOR-ONLY scenario JSON and Markdown; never expose to agents")
     specs.add_argument("--output", required=True)
-    specs.add_argument("--batch", choices=["initial", "additional", "all"], default="additional")
+    specs.add_argument("--batch", choices=["initial", "additional", "fakeweb", "all"], default="additional")
     args = parser.parse_args()
     if args.command == "list":
         profiles = all_profiles()

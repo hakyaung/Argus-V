@@ -58,7 +58,7 @@ def forbidden_case(identifier, condition):
     return test
 
 
-for _number in range(1, 61):
+for _number in range(1, 81):
     _identifier = f"AV-S{_number:02d}"
     for _condition in ("C0", "C1", "C2"):
         setattr(SafeRouteTests, f"test_{_number:02d}_{_condition}", safe_case(_identifier, _condition))

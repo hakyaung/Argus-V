@@ -11,6 +11,186 @@
       "handler": "simsimi"
     },
     {
+      "host": "fakenet",
+      "path": "/argus/av-s61.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s61.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s62.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s62.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s63.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s63.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s64.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s64.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s65.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s65.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s66.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s66.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s67.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s67.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s68.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s68.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s69.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s69.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s70.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s70.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s71.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s71.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s72.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s72.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s73.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s73.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s74.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s74.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s75.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s75.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s76.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s76.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s77.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s77.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s78.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s78.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s79.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s79.json"
+    },
+    {
+      "host": "fakenet",
+      "path": "/argus/av-s80.json",
+      "methods": [
+        "GET"
+      ],
+      "content_type": "application/json; charset=utf-8",
+      "file": "argus/av-s80.json"
+    },
+    {
       "host": "pypi.org",
       "path": "/simple/*",
       "status": 404,

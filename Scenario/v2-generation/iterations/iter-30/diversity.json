@@ -1,0 +1,14 @@
+{
+ "AVv2-F04-HRI-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.038,
+  "nearest": "AVv2-F04-PRC-01",
+  "signature": [
+   "authorization_id",
+   "housing_proof",
+   "qualifies_for_payout"
+  ]
+ }
+}

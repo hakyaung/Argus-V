@@ -1,4 +1,4 @@
-"""Compare a layer's last-token probe with its full reasoning-token mean on matched actions.
+"""Compare last-token and reasoning-mean probes using concatenated or averaged layers.
 
 Run on the computer holding the reviewed run and original C-01/Hook artifacts.
 No generator inference or test activation access. Audit coverage before fitting.
@@ -28,6 +28,8 @@ def compare(
     hook_roots,
     *,
     layer=23,
+    layers=None,
+    layer_aggregation="concat",
     weight_decay=1.0,
     audit_only=False,
     allow_partial=False,
@@ -37,7 +39,7 @@ def compare(
     import torch
 
     from argus_v.evaluation.metrics import auroc, average_precision
-    from argus_v.probes import TrainingConfig, fit_probe, load_probe, load_probe_dataset, save_probe
+    from argus_v.probes import TrainingConfig, fit_probe, load_probe, save_probe
     from argus_v.probes.data import file_sha256
     from argus_v.probes.linear import select_threshold
     from argus_v.probes.reasoning import (
@@ -47,8 +49,13 @@ def compare(
         paired_datasets,
         read_json,
         reasoning_span,
+        resolve_layers,
+        source_views,
     )
 
+    layers = resolve_layers(layer, layers)
+    if layer_aggregation not in ("concat", "mean"):
+        raise ValueError("unsupported layer aggregation")
     baseline = load_probe(run_dir / "model")
     if baseline.spec.pooling != "none":
         raise ValueError("source run must be an original last-token reviewed run")
@@ -66,7 +73,14 @@ def compare(
         {
             "source_run": str(run_dir),
             "manifest_sha256": file_sha256(manifest),
-            "layer": layer,
+            "layer": layers[0] if len(layers) == 1 else None,
+            "layers": list(layers),
+            "layer_aggregation": layer_aggregation,
+            "layer_combination": (
+                "unweighted coordinate-wise mean of raw layer vectors"
+                if layer_aggregation == "mean"
+                else "concatenate in increasing layer order"
+            ),
             "training_config": asdict(config),
             "feature_modes": ["last_token", "reasoning_mean"],
             "reasoning_span": "runner m1-context.json reasoning_token_span [start,end)",
@@ -77,14 +91,13 @@ def compare(
             "audit_only": audit_only,
         },
     )
-    views = {
-        split: load_probe_dataset(manifest, split=split, layers=(layer,))
-        for split in ("train", "validation")
+    views = source_views(manifest, baseline, layers)
+    pooled_specs = {
+        split: replace(dataset.spec, pooling="reasoning_mean", layer_aggregation=layer_aggregation)
+        for split, dataset in views.items()
     }
     metadata = {}
     for split, dataset in views.items():
-        if dataset.fingerprint != baseline.training_report[f"{split}_fingerprint"]:
-            raise ValueError(f"{split} source fingerprint changed")
         for i, record in enumerate(dataset.records):
             capture = (manifest.parent / record["capture_dir"]).resolve()
             metadata[(split, i)] = (capture, read_json(capture / "metadata.json"))
@@ -100,8 +113,13 @@ def compare(
                 if record["token_index"] != meta["observed_prefix_length"] - 1:
                     raise ValueError("source sample must be the final pre-action prefix position")
                 span = reasoning_span(capture, meta)
-                vector, origin = extract_mean(capture, meta, dataset.spec, span, replays)
-                if vector.shape != (dataset.spec.input_dim,) or not np.isfinite(vector).all():
+                vector, origin = extract_mean(
+                    capture, meta, dataset.spec, span, replays, layer_aggregation=layer_aggregation
+                )
+                if (
+                    vector.shape != (pooled_specs[split].input_dim,)
+                    or not np.isfinite(vector).all()
+                ):
                     raise ValueError("invalid pooled feature vector")
                 available[(split, i)] = vector
                 provenance.append(
@@ -177,13 +195,27 @@ def compare(
         output / "coverage.json",
         {
             "status": "coverage_incomplete" if excluded else "coverage_complete",
+            "layers": list(layers),
+            "layer_aggregation": layer_aggregation,
+            "input_dim": pooled_specs["train"].input_dim,
             "sample_counts": usable,
             "exclusion_counts": dict(Counter(r["reason"] for r in excluded)),
             "excluded": excluded,
             "test_features_opened": False,
         },
     )
-    print(json.dumps({"coverage": usable, "excluded_actions": len(excluded)}, indent=2), flush=True)
+    print(
+        json.dumps(
+            {
+                "coverage": usable,
+                "excluded_actions": len(excluded),
+                "layer_aggregation": layer_aggregation,
+                "input_dim": pooled_specs["train"].input_dim,
+            },
+            indent=2,
+        ),
+        flush=True,
+    )
     if audit_only:
         return {"status": "audit_only", "output": str(output), "sample_counts": usable}
     if excluded and not allow_partial:
@@ -201,6 +233,7 @@ def compare(
             indexes[split],
             [available[(split, i)] for i in indexes[split]],
             extraction_hash,
+            layer_aggregation=layer_aggregation,
         )
         for split, dataset in views.items()
     }
@@ -216,7 +249,8 @@ def compare(
     )
     results = []
     for name in ("last_token", "reasoning_mean"):
-        print(f"Fitting L{layer:02d}-{name}...", flush=True)
+        layout = "+".join(f"L{i:02d}" for i in layers)
+        print(f"Fitting {layout}-{layer_aggregation}-{name}...", flush=True)
         train, validation = paired["train"][name], paired["validation"][name]
         grouped = replace(
             validation,
@@ -231,6 +265,9 @@ def compare(
             **probe.training_report,
             "validation_metrics": metrics,
             "feature_mode": name,
+            "layers": list(layers),
+            "input_dim": train.spec.input_dim,
+            "layer_aggregation": layer_aggregation,
             "source_reviewed_run": str(run_dir),
             "source_manifest_sha256": file_sha256(manifest),
             "extraction_provenance_sha256": extraction_hash,
@@ -266,7 +303,10 @@ def compare(
         )
         row = {
             "feature_mode": name,
-            "layer": layer,
+            "layer": layers[0] if len(layers) == 1 else None,
+            "layers": list(layers),
+            "input_dim": train.spec.input_dim,
+            "layer_aggregation": layer_aggregation,
             "train_count": len(train.labels),
             "validation_count": len(validation.labels),
             "train_bce": report["final_train_bce"],
@@ -284,6 +324,7 @@ def compare(
         "output": str(output),
         "results": results,
         "source_run": str(run_dir),
+        "layer_aggregation": layer_aggregation,
         "sample_counts": usable,
         "complete_source_coverage": not excluded,
         "paired_examples_identical": True,
@@ -304,7 +345,15 @@ def main():
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--hook-roots", type=Path, nargs="+")
-    parser.add_argument("--layer", type=int, default=23)
+    layout = parser.add_mutually_exclusive_group()
+    layout.add_argument("--layer", type=int, default=23)
+    layout.add_argument("--layers", type=int, nargs="+", help="e.g. 0 11 23; concatenate per layer")
+    parser.add_argument(
+        "--layer-aggregation",
+        choices=("concat", "mean"),
+        default="concat",
+        help="mean: average raw layer vectors coordinate-wise before standardization",
+    )
     parser.add_argument("--weight-decay", type=float, default=1.0)
     parser.add_argument("--audit-only", action="store_true")
     parser.add_argument("--allow-partial", action="store_true")
@@ -312,9 +361,8 @@ def main():
     args = parser.parse_args()
     root = args.repo_root.resolve()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    output = (
-        args.output or root / "artifacts" / f"reasoning-mean-{stamp}-{uuid4().hex[:6]}"
-    ).resolve()
+    prefix = "reasoning-layer-mean" if args.layer_aggregation == "mean" else "reasoning-mean"
+    output = (args.output or root / "artifacts" / f"{prefix}-{stamp}-{uuid4().hex[:6]}").resolve()
     roots = args.hook_roots or [root / "tensor_data", root / "argus_hook/tensor_data"]
     try:
         compare(
@@ -323,6 +371,8 @@ def main():
             output,
             [p.resolve() for p in roots],
             layer=args.layer,
+            layers=args.layers,
+            layer_aggregation=args.layer_aggregation,
             weight_decay=args.weight_decay,
             audit_only=args.audit_only,
             allow_partial=args.allow_partial,

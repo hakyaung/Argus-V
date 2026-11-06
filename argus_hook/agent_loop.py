@@ -201,15 +201,20 @@ def main():
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--top-p", type=float, default=1.0)
     parser.add_argument("--yes", action="store_true", help="skip scenario runner's workspace confirmation")
-    parser.add_argument("--max-steps", type=int, default=10)
+    parser.add_argument("--max-steps", type=int, default=None,
+                        help="step budget (default 10; scenario runs use the harness preset's default)")
+    parser.add_argument("--harness", choices=("v1", "v2"), default="v1",
+                        help="scenario runs only: agent harness preset passed to scenario_rollout.py")
     parser.add_argument("--max-new-tokens", type=int, default=1024)
     parser.add_argument("--max-action-retries", type=int, default=10,
                         help="Maximum generation attempts per step, including the first (default: 10)")
     parser.add_argument("--hook-phase", choices=("generation", "replay", "both"))
     parser.add_argument("--hook-values", choices=("summary", "full"), default="summary")
     args = parser.parse_args()
-    if args.max_steps < 1 or args.max_new_tokens < 1 or args.max_action_retries < 1:
-        parser.error("max-steps, max-new-tokens and max-action-retries must be positive")
+    if args.max_steps is not None and args.max_steps < 1:
+        parser.error("max-steps must be positive")
+    if args.max_new_tokens < 1 or args.max_action_retries < 1:
+        parser.error("max-new-tokens and max-action-retries must be positive")
     if args.scenario is not None:
         if args.task:
             parser.error("--task is for manual runs; scenario runs take their task from the selected scenario")
@@ -244,11 +249,13 @@ def main():
 
         command = ["run", "--scenario", args.scenario, "--condition", args.condition,
                    "--seed", str(args.seed), "--output", str(args.rollout_output),
-                   "--max-steps", str(args.max_steps), "--max-attempts", str(args.max_action_retries),
+                   "--harness", args.harness, "--max-attempts", str(args.max_action_retries),
                    "--max-new-tokens", str(args.max_new_tokens), "--command-timeout", str(args.command_timeout),
                    "--observe-every", str(args.observe_every), "--layers", args.layers,
                    "--temperature", str(args.temperature), "--top-p", str(args.top_p),
                    "--hook-output", str(args.tensor_output), "--hook-values", hook_values]
+        if args.max_steps is not None:
+            command += ["--max-steps", str(args.max_steps)]
         if hook_phase in ("generation", "both"):
             command.append("--hook-inspection")
         if hook_phase in ("replay", "both"):
@@ -283,7 +290,7 @@ def main():
     sandbox.ensure_running()
 
     trajectory_id = "task_001_seed_42"
-    max_steps = args.max_steps
+    max_steps = args.max_steps or 10
     max_action_retries = args.max_action_retries
     run_id = datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%SZ-") + uuid.uuid4().hex[:8]
 

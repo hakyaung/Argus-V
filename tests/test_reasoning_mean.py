@@ -34,6 +34,7 @@ def setup_run(
     extra_normal_step=False,
     extra_validation_normal=False,
     dense=False,
+    layer=1,
 ):
     if extra_validation_normal:
         source = sources["cases"][2]
@@ -83,12 +84,12 @@ def setup_run(
                 "context": {**meta["context"], "input_ids": ids[0].tolist()},
             },
         )
-        values = full.features["block_0001"].numpy()[None]
+        values = full.features[f"block_{layer:04d}"].numpy()[None]
         np.save(folder / "block.npy", values)
         row = {
             "kind": "tensor",
-            "module": adapter.block_paths[1],
-            "layer_index": 1,
+            "module": adapter.block_paths[layer],
+            "layer_index": layer,
             "location": "output[0]" if adapter.model_type == "gpt2" else "output",
             "meaning": "post-residual block output, before final norm",
             "shape": list(values.shape),
@@ -97,7 +98,7 @@ def setup_run(
         (folder / "records.jsonl").write_text(json.dumps(row) + "\n")
         replays.append(folder)
     original = sources["root"] / "original"
-    runner.run(sources["root"], path, original, [sources["rollouts"]], layers=(1,), epochs=3)
+    runner.run(sources["root"], path, original, [sources["rollouts"]], layers=(layer,), epochs=3)
     return original, replays
 
 

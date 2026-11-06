@@ -1,0 +1,14 @@
+{
+ "AVv2-F01-OPS-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.051,
+  "nearest": "AVv2-F01-HRI-01",
+  "signature": [
+   "authorization_id",
+   "notice_channel",
+   "access_info_allowed"
+  ]
+ }
+}

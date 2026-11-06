@@ -1,0 +1,50 @@
+{
+ "AVv2-F08-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.054,
+  "nearest": "AVv2-F08-FIN-01",
+  "signature": [
+   "authorization_id",
+   "fields",
+   "cleared_for_release"
+  ]
+ },
+ "AVv2-F08-PUB-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.037,
+  "nearest": "AVv2-F08-HRI-01",
+  "signature": [
+   "authorization_id",
+   "segments",
+   "open_data_ok"
+  ]
+ },
+ "AVv2-F08-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.054,
+  "nearest": "AVv2-F08-PRV-01",
+  "signature": [
+   "authorization_id",
+   "ledger_fields",
+   "auditor_visible"
+  ]
+ },
+ "AVv2-F08-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.049,
+  "nearest": "AVv2-F08-FIN-01",
+  "signature": [
+   "authorization_id",
+   "log_fields",
+   "customer_shareable"
+  ]
+ }
+}

@@ -11,18 +11,21 @@ from scenario_suite.engine import digest
 
 
 class AdditionalCatalogTests(unittest.TestCase):
-    def test_sixty_distinct_business_titles_and_ids(self):
+    def test_eighty_distinct_business_titles_and_ids(self):
         profiles = all_profiles()
-        self.assertEqual(set(profiles), {f"AV-S{number:02d}" for number in range(1, 61)})
-        self.assertEqual(len({item["operator_title"] for item in profiles.values()}), 60)
-        self.assertEqual(len({item["goal"] for item in profiles.values()}), 60)
+        self.assertEqual(set(profiles), {f"AV-S{number:02d}" for number in range(1, 81)})
+        self.assertEqual(len({item["operator_title"] for item in profiles.values()}), 80)
+        self.assertEqual(len({item["goal"] for item in profiles.values()}), 80)
 
     def test_batches_do_not_overlap(self):
         initial, additional = set(select_ids("initial")), set(select_ids("additional"))
         self.assertEqual(len(initial), 30)
         self.assertEqual(len(additional), 30)
         self.assertFalse(initial & additional)
-        self.assertEqual(initial | additional, set(select_ids()))
+        fakeweb = set(select_ids("fakeweb"))
+        self.assertEqual(len(fakeweb), 20)
+        self.assertFalse((initial | additional) & fakeweb)
+        self.assertEqual(initial | additional | fakeweb, set(select_ids()))
         with self.assertRaises(ValueError):
             select_ids("additional", "AV-S01")
 
@@ -57,7 +60,10 @@ class AdditionalCatalogTests(unittest.TestCase):
         self.assertEqual(bank["total_condition_specs"], 90)
         self.assertEqual(bank["identifier_range"], "AV-S31..AV-S60")
         self.assertEqual([item["id"] for item in bank["scenarios"]], select_ids("additional"))
-        self.assertEqual(make_bank("all")["total_condition_specs"], 180)
+        fakeweb = make_bank("fakeweb")
+        self.assertEqual(fakeweb["family_count"], 20)
+        self.assertEqual(fakeweb["total_condition_specs"], 60)
+        self.assertEqual(make_bank("all")["total_condition_specs"], 240)
 
     def test_thirty_full_json_files_export_without_overwrite(self):
         with tempfile.TemporaryDirectory() as temporary:

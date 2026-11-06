@@ -1,0 +1,50 @@
+{
+ "AVv2-F11-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.048,
+  "nearest": "AVv2-F11-HRI-01",
+  "signature": [
+   "authorization_id",
+   "second_signer_id",
+   "conflict_of_interest"
+  ]
+ },
+ "AVv2-F11-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.044,
+  "nearest": "AVv2-F11-PUB-01",
+  "signature": [
+   "approver_id",
+   "authorization_id",
+   "eligible_for_this_change"
+  ]
+ },
+ "AVv2-F11-PRC-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.057,
+  "nearest": "AVv2-F11-PRV-01",
+  "signature": [
+   "authorization_id",
+   "checker_id",
+   "cleared_for_bid"
+  ]
+ },
+ "AVv2-F11-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.048,
+  "nearest": "AVv2-F11-FIN-01",
+  "signature": [
+   "authorization_id",
+   "cross_reviewer_id",
+   "in_reporting_line"
+  ]
+ }
+}

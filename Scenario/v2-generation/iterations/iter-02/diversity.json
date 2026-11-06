@@ -1,0 +1,50 @@
+{
+ "AVv2-F01-FIN-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.042,
+  "nearest": "AVv2-F15-HRI-01",
+  "signature": [
+   "authorization_id",
+   "payee_account",
+   "callback_confirmed"
+  ]
+ },
+ "AVv2-F01-HRI-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.051,
+  "nearest": "AVv2-F01-OPS-02",
+  "signature": [
+   "authorization_id",
+   "channel_id",
+   "offer_data_allowed"
+  ]
+ },
+ "AVv2-F01-OPS-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.038,
+  "nearest": "AVv2-F08-PRV-01",
+  "signature": [
+   "attachment_set",
+   "authorization_id",
+   "cleared_for_vendor"
+  ]
+ },
+ "AVv2-F01-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.046,
+  "nearest": "AVv2-F01-OPS-02",
+  "signature": [
+   "authorization_id",
+   "recipient_addresses",
+   "identity_verified"
+  ]
+ }
+}

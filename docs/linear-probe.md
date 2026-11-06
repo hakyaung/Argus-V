@@ -351,3 +351,138 @@ python scripts/compare_reasoning_mean.py --run-dir artifacts/probe-reviewed-<실
 `--allow-partial`은 추론 구간을 만들거나 sparse 벡터를 평균내는 옵션이 아닙니다. 추출 실패로
 원본이 하나도 없다면 여전히 학습할 수 없습니다. 어떤 행동·trajectory가 제외됐는지는 비교의
 `coverage.json`에서 확인합니다. test metadata/activation은 replay 대상에 포함하지 않습니다.
+
+### 0·11·23번 레이어의 추론 평균 연결
+
+`--layers 0 11 23`을 지정하면 각 레이어에서 같은 행동 전 추론 구간 `[start,end)`을
+평균한 뒤 **0 → 11 → 23 순서로 연결**합니다. 레이어끼리 평균하거나 세 모델의 점수를
+앙상블하는 방식이 아닙니다. gpt-oss-20b에서 입력은 `2880 × 3 = 8640`차원이며,
+기존과 같이 train 전용 표준화 → Linear(D,1) → sigmoid를 사용합니다.
+두 probe는 같은 세 레이어를 쓰는 `last_token`과 `reasoning_mean`입니다.
+
+기존 L23 replay가 있으면 0·11번만 추가 추출할 수 있습니다. 아래 `--model-dir`는
+기존 replay에 사용한 동일 checkpoint의 실제 로컬 경로로 지정합니다.
+
+```bash
+python scripts/replay_reasoning_activations.py \
+  --run-dir artifacts/probe-reviewed-20261022T123507Z-237dc0 \
+  --model-dir gpt-oss-20b \
+  --layers 0 11 \
+  --output artifacts/reasoning-replay-L00-L11 \
+  --max-actions 3
+```
+
+먼저 3개 행동이 C-01과 정확히 일치하는지 확인한 뒤, 같은 명령에서
+`--max-actions 3`만 빼고 실행하면 나머지를 이어서 추출합니다. 한 번의 prefix forward에서
+선택 레이어들을 함께 추출합니다. 현재 CLI 기본값은 아래의 pooled 저장 방식이며,
+`--storage full`을 지정할 때 레이어별 NPY와 해시를 저장합니다. 원래 생성 모델 가중치는
+갱신하지 않습니다. 세 레이어를 모두 새로 추출하려면 `--layers 0 11 23`과 새 output을
+사용합니다. 기존 단일 레이어의 `--layer 23` 명령과 `block.npy` 형식도 유지합니다.
+
+추가 원본과 기존 L23 원본을 함께 지정해 먼저 coverage를 확인합니다. 이 명령은
+activation을 읽어 검증하지만 probe를 학습하지 않습니다.
+
+```bash
+python scripts/compare_reasoning_mean.py \
+  --run-dir artifacts/probe-reviewed-20261022T123507Z-237dc0 \
+  --layers 0 11 23 \
+  --hook-roots artifacts/reasoning-replay-L00-L11 artifacts/reasoning-replay-L23 \
+  --allow-partial --audit-only
+```
+
+설정과 coverage를 검토한 후 `--audit-only`만 빼면 두 probe를 학습·검증합니다.
+weight decay 기본값은 1이고 epochs·학습률·seed·정상 trajectory FPR 상한은 원래 reviewed
+run의 기록을 상속합니다. `plan.json`과 각 모델의 `training_report.training_config`에
+실제로 적용된 값을 기록합니다. test activation은 사용하지 않습니다.
+
+원래 L23 모델의 fingerprint는 원래 L23 특징으로 검증한 뒤, 같은 manifest의 같은
+행동·라벨·순서에서 새 레이어 구성을 읽습니다. 레이어 수를 바꿨다는 이유로 원래
+fingerprint와 새 특징의 fingerprint를 직접 비교하지 않습니다.
+같은 prefix의 replay가 여러 폴더에 있더라도 레이어별 원본을 선택하며, **동일 레이어의
+원본이 중복되면 중단**합니다. 0·11·23 중 하나라도 누락되거나 검증에 실패하면 해당
+trajectory 전체를 양쪽에서 동일하게 제외합니다.
+
+결과의 `layers`, `input_dim`, `feature_spec`에 입력 구성을 저장하며,
+`extraction-provenance.json`의 `per_layer`에는 레이어별 원본 파일·해시를 기록합니다.
+기존 23번 단독 결과와 표본이 달라질 수 있으므로 coverage를 먼저 확인해야 합니다.
+이 비교가 직접 제공하는 기준선은 이번에 같은 세 레이어·같은 표본으로 재학습한
+`last_token`이며, 23번 단독 대비 개선이나 독립 test 일반화를 자동으로 입증하지 않습니다.
+
+### 0·11·23번 레이어의 추론 평균 벡터끼리 다시 평균
+
+위의 추출 결과를 그대로 재사용하고 비교 명령에 **`--layer-aggregation mean`**을
+추가하면 각 레이어의 추론 토큰 평균 벡터를 좌표별로 같은 비중으로 다시 평균합니다.
+
+```text
+mu_0  = mean(추론 구간의 layer 0 activation, 토큰 방향)
+mu_11 = mean(추론 구간의 layer 11 activation, 토큰 방향)
+mu_23 = mean(추론 구간의 layer 23 activation, 토큰 방향)
+x = (mu_0 + mu_11 + mu_23) / 3
+```
+
+gpt-oss-20b에서 `x`는 **2,880차원**입니다. raw activation의 두 평균을 모두 계산한 뒤
+train 전용 표준화 → Linear(2880,1) → sigmoid를 적용합니다. 레이어별로 먼저
+표준화한 벡터나 세 probe의 점수를 평균하지 않습니다. 같은 좌표를 평균해야 하므로
+선택한 레이어들의 hidden size가 다르면 중단합니다.
+
+```bash
+python scripts/compare_reasoning_mean.py \
+  --run-dir artifacts/probe-reviewed-20261022T123507Z-237dc0 \
+  --layers 0 11 23 \
+  --layer-aggregation mean \
+  --hook-roots artifacts/reasoning-replay-L00-L11 artifacts/reasoning-replay-L23 \
+  --allow-partial --audit-only
+```
+
+coverage와 `plan.json`의 `layer_aggregation: "mean"`을 확인한 뒤 `--audit-only`를
+빼면 probe를 학습·검증합니다. 원본 추출 명령은 변경할 필요가 없고, 이미 0·11·23번의
+full-prefix replay가 있으면 재추출도 필요 없습니다. 기존 누락 시 trajectory 전체 제외,
+train/validation만 사용, 모델별 validation 임계값 선택 규칙을 유지합니다.
+
+이 모드의 대조군 `last_token`도 같은 세 레이어의 마지막 토큰 벡터를 좌표별로 평균해
+2,880차원으로 만듭니다. 두 probe의 학습은 각각 수행합니다. 출력은 기본적으로 새
+`artifacts/reasoning-layer-mean-<시각>-<ID>/`에 저장합니다. 모델 명세에는
+`pooling: "reasoning_mean"`과 `layer_aggregation: "mean"`을 함께 기록하며,
+`comparison.json/csv`와 모델 학습 보고서의 `input_dim`은 2880이어야 합니다.
+연결 방식은 기존 호환성을 위해 기본값으로 유지하므로 평균하려면 옵션을 반드시 지정합니다.
+
+평균으로 차원을 줄이는 선택은 레이어별로 다른 정보를 섞을 수 있습니다. 성능 향상 여부는
+동일 표본의 검증 결과로 확인해야 하며, 입력 차원이 같다는 사실만으로 개선을 의미하지 않습니다.
+
+### 디스크 공간 확보와 작은 replay 재사용
+
+`compact_reasoning_replays.py`는 **모델을 불러오지 않고** 완료된 train/validation
+replay를 행동 하나·레이어 하나씩 읽습니다. 전체 토큰 NPY는 mmap으로 접근하고 128토큰씩
+float64 누적한 뒤 float32 평균으로 저장합니다. 기존 평균과 수치 연산 순서를 유지합니다.
+
+먼저 다음 명령은 읽기 전용으로 변환 대상 수와 `full_tensor_bytes`만 확인합니다.
+
+```bash
+python scripts/compact_reasoning_replays.py \
+  --run-dir artifacts/probe-reviewed-20261022T123507Z-237dc0 \
+  --hook-roots artifacts/reasoning-replay-L00-L11 artifacts/reasoning-replay-L23
+```
+
+같은 명령에 `--apply --delete-source-tensors`를 추가하면 행동마다 작은 archive를
+저장·재개봉·검증하고 manifest를 원자적으로 교체한 **뒤에만**, 해당 행동의 기록된 NPY를
+삭제합니다. 해시가 바뀐 파일은 삭제하지 않습니다. 중간에 멈춰도 같은 명령으로 재개합니다.
+`--apply`만 쓰면 변환하지만 NPY는 남겨두며, 나중에 삭제 옵션으로 정리할 수 있습니다.
+일괄 삭제 명령은 사용하지 마세요. 첫 archive와 manifest를 쓸 최소 여유 공간은 필요합니다.
+
+새 `pooled-features.npz`에는 레이어별 추론 평균, 마지막 토큰, 기존 C-01 대조 위치의
+activation만 저장합니다. manifest에는 구간·모델·입력 해시·검증 기록·삭제 대상 해시를
+보존합니다. 평균을 레이어별로 보관하므로 비교 시 `mean`/`concat` 모두 가능합니다.
+**임의의 다른 토큰 구간 분석은 전체 NPY 삭제 후 이 요약 파일만으로 할 수 없습니다.**
+원본 C-01, rollout, 기존 probe·비교 결과, 완료 manifest 없는 중단된 파일, test tensor는
+이 정리의 삭제 대상이 아닙니다. 현재 비교에서 trajectory 전체가 제외되더라도 다음
+재개 시 사용할 수 있으므로 해당 행동의 작은 요약은 보존합니다.
+
+변환된 폴더 경로를 바꾸지 않고, 기존 replay 명령에 `--storage pooled`를 추가해 재개합니다.
+완료된 pooled 항목은 검사 후 건너뛰고 남은 행동은 큰 NPY를 새로 저장하지 않습니다.
+CLI 기본값도 `pooled`이며 Python 함수 API 기본값은 기존 호출과 호환되게 `full`입니다.
+모델 forward는 행동 하나의 prefix 단위입니다. 모델 자체를 토큰 스트리밍하거나 KV cache를
+재사용하는 변경은 아닙니다. test activation 접근·생성·생성 모델 학습은 하지 않습니다.
+
+이후 비교 명령의 `--hook-roots`는 기존 경로를 그대로 사용합니다. pooled replay의
+추론 평균은 그대로 읽어 쓰며, 토큰 평균을 다시 계산하지 않습니다. `--audit-only`도
+저장된 평균을 검증해 재사용합니다. 학습 시 표준화와 두 probe의 학습은 기존과 같습니다.

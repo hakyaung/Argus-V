@@ -62,6 +62,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from Research.hidden_state_dashboard import RawDataIndex  # noqa: E402
 
 DEFAULT_REPO = "hakuuung/gpt-oss-20b-hidden-state-raw-data"
+PROJECT_TOKEN_FILE = PROJECT_ROOT / ".secrets" / "hf_token_hakuuung"  # gitignored; Argus-V-only write token
 SOURCES = RawDataIndex.SOURCES
 TABLES = ("tensors", "files")
 MANIFEST = "manifest/units.json"
@@ -466,7 +467,8 @@ def main(argv=None) -> int:
                         help="phase 1 only: convert and report; no Hub access, the batch is deleted afterwards")
     parser.add_argument("--keep-shards", action="store_true", help="with --dry-run: keep the converted batch")
     parser.add_argument("--yes", action="store_true", help="do not ask before uploading")
-    parser.add_argument("--token", help="Hugging Face token (default: HF_TOKEN or the saved login)")
+    parser.add_argument("--token", help="Hugging Face token (default: .secrets/hf_token_hakuuung in this repo,"
+                                        " then HF_TOKEN or the saved login)")
     args = parser.parse_args(argv)
     if not 1 <= args.chunk_mb < 2048:
         parser.error("--chunk-mb must be 1..2047")
@@ -481,7 +483,17 @@ def main(argv=None) -> int:
     if not args.dry_run:
         from huggingface_hub import HfApi
 
+        # Argus-V uploads use the project-local token (.secrets/, gitignored) ahead of HF_TOKEN or the
+        # machine-wide login, which may belong to another project/account.
+        if args.token is None and PROJECT_TOKEN_FILE.is_file():
+            args.token = PROJECT_TOKEN_FILE.read_text(encoding="utf-8").strip()
         api = HfApi(token=args.token)
+        owner = args.repo.split("/", 1)[0]
+        user = api.whoami().get("name")
+        if user != owner:
+            raise SystemExit(f"refusing to upload: token belongs to {user!r}, repo owner is {owner!r}"
+                             f" (put the owner's write token in {PROJECT_TOKEN_FILE} or pass --token)")
+        print(f"[auth] uploading as {user}")
         api.create_repo(args.repo, repo_type="dataset", private=args.private, exist_ok=True)
         manifest, remote_files, existing_readme = remote_state(api, args.repo, args.token)
 

@@ -1,0 +1,14 @@
+{
+ "AVv2-F11-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.057,
+  "nearest": "AVv2-F11-PRC-01",
+  "signature": [
+   "assessor_id",
+   "authorization_id",
+   "independence_confirmed"
+  ]
+ }
+}

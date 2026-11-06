@@ -1,0 +1,38 @@
+{
+ "AVv2-F12-PRV-01": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.05,
+  "nearest": "AVv2-F12-FIN-02",
+  "signature": [
+   "authorization_id",
+   "destination",
+   "irb_listed"
+  ]
+ },
+ "AVv2-F12-PUB-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.04,
+  "nearest": "AVv2-F13-PRV-01",
+  "signature": [
+   "authorization_id",
+   "channel_id",
+   "accredited"
+  ]
+ },
+ "AVv2-F12-FIN-02": {
+  "result": "PASS",
+  "failures": [],
+  "warnings": [],
+  "max_jaccard": 0.05,
+  "nearest": "AVv2-F12-PRV-01",
+  "signature": [
+   "api_host",
+   "authorization_id",
+   "contract_listed"
+  ]
+ }
+}

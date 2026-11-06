@@ -1,0 +1,160 @@
+{
+ "seed": 0,
+ "bootstrap": 1000,
+ "data": "D-v1 train, dedup representatives, L16 pre_action",
+ "cv": "GroupKFold(5) by family_id; metric = mean per-fold AUROC; CI = trajectory bootstrap",
+ "subsets": {
+  "0_all_positives": {
+   "rows": 765,
+   "positives": 66,
+   "families": 24,
+   "families_with_pos": 17,
+   "L16_auc": 0.6092299237365603,
+   "L16_auc_ci": [
+    0.5352113419970803,
+    0.6808376536372222
+   ],
+   "len_step_auc": 0.5264253545872333,
+   "delta_vs_len_step": 0.08280456914932699,
+   "delta_ci": [
+    0.0024246713593791772,
+    0.15089325820393396
+   ],
+   "L16_length_stratified_auc": 0.6172820597847156,
+   "len_step_length_stratified_auc": 0.49349549068094467,
+   "L16_length_residualized_auc": 0.613938384888419,
+   "L16_length_residualized_ci": [
+    0.5440870829990049,
+    0.6723689870573857
+   ],
+   "corr_score_loglen": 0.4583614545438622,
+   "G0_like_pass": true,
+   "learning_curve_trajectory_fraction": {
+    "0.25": {
+     "mean": 0.5938103538751814,
+     "std": 0.025299013849088194,
+     "reps": 6
+    },
+    "0.5": {
+     "mean": 0.5776563633704705,
+     "std": 0.02415423931680997,
+     "reps": 6
+    },
+    "0.75": {
+     "mean": 0.6028118380453371,
+     "std": 0.02329872902771599,
+     "reps": 6
+    },
+    "1.0": {
+     "mean": 0.6092299237365603,
+     "std": 0.0,
+     "reps": 1
+    }
+   }
+  },
+  "a_drop_defect_strong": {
+   "rows": 746,
+   "positives": 47,
+   "families": 24,
+   "families_with_pos": 15,
+   "L16_auc": 0.6244864153796585,
+   "L16_auc_ci": [
+    0.5352695798711194,
+    0.7223905938226406
+   ],
+   "len_step_auc": 0.6181996418582651,
+   "delta_vs_len_step": 0.006286773521393396,
+   "delta_ci": [
+    -0.06877237622677934,
+    0.08196302203473707
+   ],
+   "L16_length_stratified_auc": 0.6121815880815887,
+   "len_step_length_stratified_auc": 0.6164028146043276,
+   "L16_length_residualized_auc": 0.5591138406016525,
+   "L16_length_residualized_ci": [
+    0.4760207147253346,
+    0.6537064818710066
+   ],
+   "corr_score_loglen": 0.4958530479864379,
+   "G0_like_pass": false
+  },
+  "a2_drop_defect_any": {
+   "rows": 739,
+   "positives": 40,
+   "families": 24,
+   "families_with_pos": 13,
+   "L16_auc": 0.5975772290042349,
+   "L16_auc_ci": [
+    0.49713731321555016,
+    0.7032226226311047
+   ],
+   "len_step_auc": 0.6518646786568508,
+   "delta_vs_len_step": -0.05428744965261589,
+   "delta_ci": [
+    -0.1497394152769273,
+    0.07999129138934491
+   ],
+   "L16_length_stratified_auc": 0.5580377079507032,
+   "len_step_length_stratified_auc": 0.5454219537555505,
+   "L16_length_residualized_auc": 0.5181296637985484,
+   "L16_length_residualized_ci": [
+    0.41782852837992673,
+    0.6172061270602841
+   ],
+   "corr_score_loglen": 0.4256678912240169,
+   "G0_like_pass": false
+  },
+  "b_action_type_only": {
+   "rows": 738,
+   "positives": 39,
+   "families": 24,
+   "families_with_pos": 13,
+   "L16_auc": 0.7847778335416885,
+   "L16_auc_ci": [
+    0.7155557907167718,
+    0.8420910774779877
+   ],
+   "len_step_auc": 0.4379405492931589,
+   "delta_vs_len_step": 0.3468372842485296,
+   "delta_ci": [
+    0.18682733120946454,
+    0.42946785198768017
+   ],
+   "L16_length_stratified_auc": 0.7659752126626936,
+   "len_step_length_stratified_auc": 0.5059498071751836,
+   "L16_length_residualized_auc": 0.802899320527074,
+   "L16_length_residualized_ci": [
+    0.7286849211732518,
+    0.8515144527656077
+   ],
+   "corr_score_loglen": 0.13266780821340884,
+   "G0_like_pass": true
+  },
+  "ab_action_type_no_strong_defect": {
+   "rows": 722,
+   "positives": 23,
+   "families": 24,
+   "families_with_pos": 11,
+   "L16_auc": 0.6271856936593204,
+   "L16_auc_ci": [
+    0.5415726498657669,
+    0.8169736641599471
+   ],
+   "len_step_auc": 0.49976374456630446,
+   "delta_vs_len_step": 0.12742194909301596,
+   "delta_ci": [
+    0.018779236850454316,
+    0.267162122848244
+   ],
+   "L16_length_stratified_auc": 0.7034193763411588,
+   "len_step_length_stratified_auc": 0.5431272083066826,
+   "L16_length_residualized_auc": 0.6304946419513371,
+   "L16_length_residualized_ci": [
+    0.5387601735174874,
+    0.8196472450177377
+   ],
+   "corr_score_loglen": 0.1568101600965138,
+   "G0_like_pass": true
+  }
+ }
+}
