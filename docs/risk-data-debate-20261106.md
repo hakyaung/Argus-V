@@ -35,3 +35,17 @@
 
 ## 사건 기록
 - 토론자 B 1라운드에서 DENIED 집계 glob이 test family(F07/F11/F14) rollout을 읽음. 개별 내용 출력 없음, 해당 family 제외 후 재계산, 보고 수치는 train/validation만. 2라운드는 test 경로를 먼저 제외. test 결과/라벨은 어떤 모델 선택에도 쓰이지 않음.
+
+## HF 데이터 확인 (2026-11-06, CPU, 읽기 전용)
+HF `hakuuung/gpt-oss-20b-hidden-state-raw-data` 업로드 배치 기준:
+
+| | 10월 라벨링 데이터 (10/16 업로드) | 11월 시나리오 데이터 (11/02~11/04 업로드) |
+|---|---|---|
+| 실행 기록 | 351 (AV-S01~S80) + agent_loop 3 + 기타 18 | 2,693 (새 시나리오 F01~F15 2,320 + 10월 시나리오 재실행 373) |
+| 라벨 | 검수 완료 (사람 확인 623 + 위임 확인 1,124 행동) | 규칙 라벨 + LLM 초안 |
+| Argus-V1 학습 | 사용 안 함 | 이것만 사용 |
+
+- 10월 라벨링 데이터 351개: train 208 / validation 52 / test 91(봉인, 열지 않음). 로컬 `artifacts/rollouts/`에도 전부 있고 step마다 24개 층 관측 행(features.npz)이 있어 CPU로 Argus-V1 특징을 만들 수 있음.
+- 검수 라벨이 있는 train/validation 248개: 위반 step train 88 / validation 12, 위반 실행 train 60/198(30%), 위반 계열 22개.
+- 주의: iter-00에서 pre_action 행으로 이미 학습·validation 평가에 쓰였음(validation이 처음 보는 데이터는 아님). 시나리오·하네스 버전이 11월과 달라 버전 혼동 점검 필요. 도구 혼동 점검 필요.
+- 다음 단계 제안(승인 대기): Argus-V1 구조 그대로, 학습 데이터에 10월 라벨링 데이터 추가 후 재학습.
