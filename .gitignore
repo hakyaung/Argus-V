@@ -28,6 +28,12 @@ Research/*.sqlite3
 Research/*.sqlite3-wal
 Research/*.sqlite3-shm
 
+# Local-only HF queue preview for the labeling dashboard
+label-dashboard/public/preview_queue.json
+label-dashboard/november_queue.jsonl
+label-dashboard/node_modules/
+label-dashboard/.npm-cache/
+
 # GPT-OSS Hook 실험 데이터
 tensor_data/
 # Project-local secrets (HF write token for hakuuung)
