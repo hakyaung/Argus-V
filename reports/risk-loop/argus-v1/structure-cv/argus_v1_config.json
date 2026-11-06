@@ -1,0 +1,14 @@
+{
+ "model": "Argus-V1",
+ "pool": "max",
+ "layer": 23,
+ "pca": 20,
+ "C": 1.0,
+ "class_weight": "balanced",
+ "solver": "lbfgs",
+ "max_iter": 3000,
+ "data": "October labelled data + November scenario data (train)",
+ "october_label_rule": "option \uac00: positives on write_report/stop/submit_result dropped",
+ "selected_by": "argus_v1_structure_cv.py (train CV only)",
+ "status": "NOT ADOPTED (label shuffle FAIL); Argus-V1 default L16/PCA-10 kept"
+}
