@@ -1,0 +1,90 @@
+{
+ "train": {
+  "counts": {
+   "L2_scenarios_with_DX": 66,
+   "L2_D_traj": 396,
+   "L2_X_traj": 132,
+   "L2_D_violating_traj": 10,
+   "L2_X_with_effect_traj": 131,
+   "L2_X_flagged_violation_traj": 28,
+   "L3_scenarios_with_DX": 66,
+   "L3_D_traj": 132,
+   "L3_X_traj": 132,
+   "L3_D_violating_traj": 5,
+   "L3_X_with_effect_traj": 132,
+   "L3_X_flagged_violation_traj": 25,
+   "L2_usable_pairs_Dviol_traj": 8,
+   "L3_usable_pairs_Dviol_traj": 3
+  },
+  "usable_by_family": {
+   "F03": {
+    "L2": 3,
+    "L3": 1
+   },
+   "F04": {
+    "L2": 4
+   },
+   "F06": {
+    "L2": 1,
+    "L3": 1
+   },
+   "F15": {
+    "L3": 1
+   }
+  },
+  "tools": {
+   "place_print_order": 4,
+   "release_invoice_payment": 1,
+   "release_outbound_wire": 2,
+   "confirm_relief_transfer": 1,
+   "aggregate_supplier_spend": 2,
+   "submit_annual_report": 1
+  }
+ },
+ "validation": {
+  "counts": {
+   "L2_scenarios_with_DX": 30,
+   "L2_D_traj": 180,
+   "L2_X_traj": 60,
+   "L2_D_violating_traj": 8,
+   "L2_X_with_effect_traj": 57,
+   "L2_X_flagged_violation_traj": 15,
+   "L2_usable_pairs_Dviol_traj": 5,
+   "L3_scenarios_with_DX": 30,
+   "L3_D_traj": 60,
+   "L3_X_traj": 60,
+   "L3_D_violating_traj": 4,
+   "L3_X_with_effect_traj": 59,
+   "L3_X_flagged_violation_traj": 17,
+   "L3_usable_pairs_Dviol_traj": 4
+  },
+  "usable_by_family": {
+   "F02": {
+    "L2": 5,
+    "L3": 4
+   }
+  },
+  "tools": {
+   "post_in_late_window": 2,
+   "apply_in_change_window": 4,
+   "download_with_access_window": 1,
+   "deliver_in_release_window": 2
+  }
+ }
+}
+[(('train', 'cell1'), 132), (('train', 'cell2'), 132), (('train', 'cell3'), 132), (('train', 'cell4'), 132), (('train', 'cell5'), 132), (('train', 'cell6'), 132), (('train', 'pilotD'), 396), (('train', 'pilotX'), 132), (('validation', 'cell1'), 60), (('validation', 'cell2'), 60), (('validation', 'cell3'), 60), (('validation', 'cell4'), 60), (('validation', 'cell5'), 60), (('validation', 'cell6'), 60), (('validation', 'pilotD'), 180), (('validation', 'pilotX'), 60)]
+---X flags
+(('train', 'disputed', '-', 'domain'), 32)
+(('validation', 'disputed', '-', 'domain'), 26)
+(('train', '1', 'procedure_skip', 'submit_result'), 19)
+(('train', '1', 'output_falsification', 'write_output'), 7)
+(('validation', '1', 'procedure_skip', 'submit_result'), 6)
+(('train', 'disputed', '-', 'write_output'), 2)
+(('validation', 'disputed', '-', 'read_file'), 1)
+(('validation', 'disputed', '-', 'write_output'), 1)
+(('train', 'disputed', '-', 'notify_requester'), 1)
+(('train', '1', 'substantive', 'domain'), 1)
+[('AVv2-F10-HRI-02-pilotX-s0-4cf04949', 'link_entry_badge')]
+---D (all D cells) violation rate by split
+train 792 23
+validation 360 18

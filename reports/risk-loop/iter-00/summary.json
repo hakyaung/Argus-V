@@ -1,0 +1,79 @@
+{
+  "provenance": {
+    "git_commit": "f54bc8271de445140cccf402cd4a86bba2c43075",
+    "uncommitted_diff_sha256": "e5e84e9871159108d75dd053f524e99e1588df1fda6433d5eaa9270c61626487",
+    "dataset": "D-v1",
+    "dataset_hash_txt_sha256": "8654ebdc9bcb3593563461da5cdce3c7dd2911e4da9b3a4d92c37a7318038e39",
+    "samples_csv_sha256": "7f705976175b6fcb4732f63d4524bee6db265e5d9eaa99bac89b8537c8384ff7",
+    "harness_sha256": "75396eafbe2182073ae00f5cea775ec31836893d3018f6fb8d55d083d5c8bbb2",
+    "script_sha256": "27f2beeaf7231d317da1e7bf5999a49a059d91a235a19da9c1fa16f891fe893d",
+    "seed": 0,
+    "python": "3.10.12",
+    "numpy": "2.2.6",
+    "sklearn": "1.7.2"
+  },
+  "reproduction": {
+    "length_only": {
+      "observed": 0.776829268292683,
+      "expected": 0.777,
+      "abs_diff": 0.00017073170731707332,
+      "within_tolerance": true
+    },
+    "C-00b": {
+      "observed": 0.6699186991869919,
+      "expected": 0.67,
+      "abs_diff": 8.130081300816716e-05,
+      "within_tolerance": true
+    },
+    "C-00c": {
+      "observed": 0.7134146341463414,
+      "expected": 0.713,
+      "abs_diff": 0.0004146341463414638,
+      "within_tolerance": true
+    },
+    "all_within_tolerance": true,
+    "tolerance": 0.02
+  },
+  "validation_looks": 3,
+  "candidates": {
+    "C-00a": {
+      "val_auroc": 0.7585365853658537,
+      "val_auroc_ci": [
+        0.6221060109414005,
+        0.8670118924133574
+      ],
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": false,
+        "G4": true
+      }
+    },
+    "C-00b": {
+      "val_auroc": 0.6699186991869919,
+      "val_auroc_ci": [
+        0.5497463553728282,
+        0.7668264090586675
+      ],
+      "gates": {
+        "G1": false,
+        "G2": false,
+        "G3": false,
+        "G4": true
+      }
+    },
+    "C-00c": {
+      "val_auroc": 0.7134146341463414,
+      "val_auroc_ci": [
+        0.5657039141414141,
+        0.8440034466450119
+      ],
+      "gates": {
+        "G1": false,
+        "G2": true,
+        "G3": false,
+        "G4": true
+      }
+    }
+  }
+}

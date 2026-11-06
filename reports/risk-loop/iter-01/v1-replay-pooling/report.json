@@ -1,0 +1,375 @@
+{
+ "rows": 761,
+ "missing_replay": 4,
+ "positives": 65,
+ "families": 24,
+ "positive_families": 17,
+ "layers": {
+  "L0": {
+   "ref_rows_per_action": [
+    3,
+    7.275952693823916,
+    64
+   ],
+   "results": [
+    {
+     "name": "last",
+     "fold_mean_auroc": 0.5143303748993194,
+     "fold_aurocs": [
+      0.68,
+      0.507,
+      0.509,
+      0.443,
+      0.432
+     ],
+     "pooled_auroc": 0.4713748894783378,
+     "len_strat_auroc": 0.4679529103989536,
+     "ap": 0.08164487027573654,
+     "recall_at_5pct_fpr": 0.034722222222222224,
+     "corr_loglen": 0.15039438363146926
+    },
+    {
+     "name": "span_mean_all_tokens",
+     "fold_mean_auroc": 0.5552277340043822,
+     "fold_aurocs": [
+      0.645,
+      0.55,
+      0.541,
+      0.5,
+      0.54
+     ],
+     "pooled_auroc": 0.5280282935455349,
+     "len_strat_auroc": 0.5120994113799869,
+     "ap": 0.085740560644107,
+     "recall_at_5pct_fpr": 0.01818181818181818,
+     "corr_loglen": 0.24894224882804813
+    },
+    {
+     "name": "ref_mean",
+     "fold_mean_auroc": 0.5962248383358457,
+     "fold_aurocs": [
+      0.805,
+      0.636,
+      0.507,
+      0.563,
+      0.47
+     ],
+     "pooled_auroc": 0.5313218390804598,
+     "len_strat_auroc": 0.5565729234793984,
+     "ap": 0.10737841186931202,
+     "recall_at_5pct_fpr": 0.15290404040404043,
+     "corr_loglen": 0.1526162205341984
+    },
+    {
+     "name": "ref_max",
+     "fold_mean_auroc": 0.6084264283472015,
+     "fold_aurocs": [
+      0.772,
+      0.62,
+      0.6,
+      0.604,
+      0.446
+     ],
+     "pooled_auroc": 0.5349248452696729,
+     "len_strat_auroc": 0.5349901896664486,
+     "ap": 0.10504905928378361,
+     "recall_at_5pct_fpr": 0.11944444444444444,
+     "corr_loglen": 0.38265592709697416
+    },
+    {
+     "name": "mil_max_ref",
+     "fold_mean_auroc": 0.6123682411522289,
+     "fold_aurocs": [
+      0.818,
+      0.613,
+      0.611,
+      0.437,
+      0.583
+     ],
+     "pooled_auroc": 0.5714854111405836,
+     "len_strat_auroc": 0.6026814911706998,
+     "ap": 0.12594982404920613,
+     "recall_at_5pct_fpr": 0.08822222222222223,
+     "corr_loglen": -0.0654496492477015
+    },
+    {
+     "name": "mil_mean_last4",
+     "fold_mean_auroc": 0.46739172296317977,
+     "fold_aurocs": [
+      0.401,
+      0.483,
+      0.573,
+      0.424,
+      0.456
+     ],
+     "pooled_auroc": 0.4748231653404067,
+     "len_strat_auroc": 0.47187704381948986,
+     "ap": 0.08153459465703987,
+     "recall_at_5pct_fpr": 0.026181818181818185,
+     "corr_loglen": -0.054720462947757835
+    }
+   ]
+  },
+  "L11": {
+   "ref_rows_per_action": [
+    3,
+    7.275952693823916,
+    64
+   ],
+   "results": [
+    {
+     "name": "last",
+     "fold_mean_auroc": 0.60193494955379,
+     "fold_aurocs": [
+      0.542,
+      0.673,
+      0.6,
+      0.545,
+      0.65
+     ],
+     "pooled_auroc": 0.59447391688771,
+     "len_strat_auroc": 0.5860039241334205,
+     "ap": 0.1294526983511073,
+     "recall_at_5pct_fpr": 0.07968181818181819,
+     "corr_loglen": 0.51344769223943
+    },
+    {
+     "name": "span_mean_all_tokens",
+     "fold_mean_auroc": 0.5455002891966607,
+     "fold_aurocs": [
+      0.511,
+      0.541,
+      0.609,
+      0.503,
+      0.564
+     ],
+     "pooled_auroc": 0.523342175066313,
+     "len_strat_auroc": 0.5166775670372793,
+     "ap": 0.09074791665324568,
+     "recall_at_5pct_fpr": 0.07062626262626262,
+     "corr_loglen": 0.36376711588058913
+    },
+    {
+     "name": "ref_mean",
+     "fold_mean_auroc": 0.6246153986771382,
+     "fold_aurocs": [
+      0.542,
+      0.7,
+      0.627,
+      0.61,
+      0.644
+     ],
+     "pooled_auroc": 0.6210875331564987,
+     "len_strat_auroc": 0.604970568999346,
+     "ap": 0.1241506591239404,
+     "recall_at_5pct_fpr": 0.1263080808080808,
+     "corr_loglen": 0.4753542675640596
+    },
+    {
+     "name": "ref_max",
+     "fold_mean_auroc": 0.6125749877278607,
+     "fold_aurocs": [
+      0.607,
+      0.64,
+      0.607,
+      0.576,
+      0.633
+     ],
+     "pooled_auroc": 0.5873563218390805,
+     "len_strat_auroc": 0.578155657292348,
+     "ap": 0.11197537467734373,
+     "recall_at_5pct_fpr": 0.08194444444444444,
+     "corr_loglen": 0.48608727373164823
+    },
+    {
+     "name": "mil_max_ref",
+     "fold_mean_auroc": 0.5617917772539582,
+     "fold_aurocs": [
+      0.616,
+      0.594,
+      0.528,
+      0.471,
+      0.6
+     ],
+     "pooled_auroc": 0.5371131741821397,
+     "len_strat_auroc": 0.5506867233485938,
+     "ap": 0.09550738492819223,
+     "recall_at_5pct_fpr": 0.01818181818181818,
+     "corr_loglen": 0.23384305810584285
+    },
+    {
+     "name": "mil_mean_last4",
+     "fold_mean_auroc": 0.544098606558993,
+     "fold_aurocs": [
+      0.425,
+      0.637,
+      0.578,
+      0.503,
+      0.578
+     ],
+     "pooled_auroc": 0.5619142351900973,
+     "len_strat_auroc": 0.5680183126226291,
+     "ap": 0.1339763076188677,
+     "recall_at_5pct_fpr": 0.12458585858585858,
+     "corr_loglen": 0.2263727096270812
+    }
+   ]
+  },
+  "L23": {
+   "ref_rows_per_action": [
+    3,
+    7.275952693823916,
+    64
+   ],
+   "results": [
+    {
+     "name": "last",
+     "fold_mean_auroc": 0.5864952932305784,
+     "fold_aurocs": [
+      0.542,
+      0.668,
+      0.565,
+      0.614,
+      0.542
+     ],
+     "pooled_auroc": 0.5567197170645447,
+     "len_strat_auroc": 0.5604970568999346,
+     "ap": 0.1151026441638541,
+     "recall_at_5pct_fpr": 0.13998989898989897,
+     "corr_loglen": 0.4667764058277347
+    },
+    {
+     "name": "span_mean_all_tokens",
+     "fold_mean_auroc": 0.5344147658759151,
+     "fold_aurocs": [
+      0.574,
+      0.43,
+      0.532,
+      0.671,
+      0.465
+     ],
+     "pooled_auroc": 0.4271220159151194,
+     "len_strat_auroc": 0.5013080444735121,
+     "ap": 0.08157902123119398,
+     "recall_at_5pct_fpr": 0.01818181818181818,
+     "corr_loglen": 0.38064969584513225
+    },
+    {
+     "name": "ref_mean",
+     "fold_mean_auroc": 0.5829819870887865,
+     "fold_aurocs": [
+      0.564,
+      0.601,
+      0.609,
+      0.59,
+      0.55
+     ],
+     "pooled_auroc": 0.5349690539345712,
+     "len_strat_auroc": 0.5343361674296926,
+     "ap": 0.09871168130855479,
+     "recall_at_5pct_fpr": 0.09562626262626263,
+     "corr_loglen": 0.5436845625432367
+    },
+    {
+     "name": "ref_max",
+     "fold_mean_auroc": 0.5859597090462126,
+     "fold_aurocs": [
+      0.594,
+      0.599,
+      0.538,
+      0.656,
+      0.544
+     ],
+     "pooled_auroc": 0.5480106100795756,
+     "len_strat_auroc": 0.5428384565075213,
+     "ap": 0.09991207036116218,
+     "recall_at_5pct_fpr": 0.04722222222222222,
+     "corr_loglen": 0.46561307470254004
+    },
+    {
+     "name": "mil_max_ref",
+     "fold_mean_auroc": 0.5797227179251817,
+     "fold_aurocs": [
+      0.715,
+      0.677,
+      0.471,
+      0.414,
+      0.622
+     ],
+     "pooled_auroc": 0.5684350132625995,
+     "len_strat_auroc": 0.5863309352517986,
+     "ap": 0.10254705296244429,
+     "recall_at_5pct_fpr": 0.07222222222222222,
+     "corr_loglen": 0.039632730342950784
+    },
+    {
+     "name": "mil_mean_last4",
+     "fold_mean_auroc": 0.492569266699556,
+     "fold_aurocs": [
+      0.296,
+      0.508,
+      0.674,
+      0.499,
+      0.486
+     ],
+     "pooled_auroc": 0.5066976127320955,
+     "len_strat_auroc": 0.49280575539568344,
+     "ap": 0.08443264241501355,
+     "recall_at_5pct_fpr": 0.008,
+     "corr_loglen": 0.1965995783566414
+    }
+   ]
+  }
+ },
+ "baseline": [
+  {
+   "name": "log_length",
+   "fold_mean_auroc": 0.6137635793908763,
+   "fold_aurocs": [
+    0.483,
+    0.672,
+    0.685,
+    0.612,
+    0.617
+   ],
+   "pooled_auroc": 0.5801503094606543,
+   "len_strat_auroc": 0.49983649444081096,
+   "ap": 0.09944276410158791,
+   "recall_at_5pct_fpr": 0.1087222222222222,
+   "corr_loglen": 1.0
+  },
+  {
+   "name": "length+step",
+   "fold_mean_auroc": 0.6075880218301439,
+   "fold_aurocs": [
+    0.483,
+    0.668,
+    0.678,
+    0.597,
+    0.611
+   ],
+   "pooled_auroc": 0.5266909814323607,
+   "len_strat_auroc": 0.48675604970569,
+   "ap": 0.09000463684421564,
+   "recall_at_5pct_fpr": 0.05,
+   "corr_loglen": 0.9040381317308347
+  }
+ ],
+ "p03_iter00_cv_refrozen_harness": {
+  "length+step": {
+   "auroc": 0.550992760220228,
+   "stratified_auroc": 0.47557711609233855,
+   "stratified_auroc_pooled_biased": 0.40441467599313713
+  },
+  "L16 pre_action C=0.001": {
+   "auroc": 0.6174404994147483,
+   "stratified_auroc": 0.6189360990297759,
+   "stratified_auroc_pooled_biased": 0.5810347103075095
+  },
+  "L23 pre_action C=0.001": {
+   "auroc": 0.580829756795422,
+   "stratified_auroc": 0.5807962529274004,
+   "stratified_auroc_pooled_biased": 0.5422330737759008
+  }
+ }
+}

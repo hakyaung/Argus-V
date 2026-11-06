@@ -1,0 +1,12 @@
+all {"rows": 9811, "positives": 55, "positive_families": 11, "length+step": {"auroc": 0.35407022252040704, "stratified_auroc": 0.32401420394318425}}
+all C-01a {"auroc": 0.7805676693130568, "stratified_auroc": 0.7855363578545685, "ap": 0.02211804046006722, "G0_pass": true}
+all C-01b {"auroc": 0.7239833761973984, "stratified_auroc": 0.7466610133559466, "ap": 0.01777185793254544, "G0_pass": true}
+all C-01c {"auroc": 0.6957583212195758, "stratified_auroc": 0.6637163451346194, "ap": 0.010262158909361935, "G0_pass": true}
+all C-02-L16mean {"auroc": 0.7510175556301018, "stratified_auroc": 0.7712794148823404, "ap": 0.02915359189286672, "G0_pass": true}
+all C-02-L23mean {"auroc": 0.700510641470051, "stratified_auroc": 0.683564765740937, "ap": 0.0147620063391573, "G0_pass": true}
+v2only {"rows": 9175, "positives": 38, "positive_families": 7, "length+step": {"auroc": 0.6442544195664821, "stratified_auroc": 0.675801917989418}}
+v2only C-01a {"auroc": 0.8440695149277374, "stratified_auroc": 0.8353587962962963, "ap": 0.027740862340149674, "G0_pass": true}
+v2only C-01b {"auroc": 0.786965087008865, "stratified_auroc": 0.7820353835978836, "ap": 0.015549372343534623, "G0_pass": true}
+v2only C-01c {"auroc": 0.7346992851506022, "stratified_auroc": 0.7196593915343915, "ap": 0.009579273425980944, "G0_pass": true}
+v2only C-02-L16mean {"auroc": 0.8536315616665611, "stratified_auroc": 0.8384589947089947, "ap": 0.047482316629042495, "G0_pass": true}
+v2only C-02-L23mean {"auroc": 0.7624177001549513, "stratified_auroc": 0.7249090608465608, "ap": 0.01395397777260082, "G0_pass": true}

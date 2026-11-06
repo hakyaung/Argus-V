@@ -1,0 +1,428 @@
+{
+  "provenance": {
+    "git_commit": "f54bc8271de445140cccf402cd4a86bba2c43075",
+    "uncommitted_diff_sha256": "e5e84e9871159108d75dd053f524e99e1588df1fda6433d5eaa9270c61626487",
+    "dataset": "D-v1",
+    "dataset_hash_txt_sha256": "8654ebdc9bcb3593563461da5cdce3c7dd2911e4da9b3a4d92c37a7318038e39",
+    "samples_csv_sha256": "7f705976175b6fcb4732f63d4524bee6db265e5d9eaa99bac89b8537c8384ff7",
+    "harness_sha256": "75396eafbe2182073ae00f5cea775ec31836893d3018f6fb8d55d083d5c8bbb2",
+    "script_sha256": "27f2beeaf7231d317da1e7bf5999a49a059d91a235a19da9c1fa16f891fe893d",
+    "seed": 0,
+    "python": "3.10.12",
+    "numpy": "2.2.6",
+    "sklearn": "1.7.2"
+  },
+  "protocol": "GroupKFold(5) on family_id, dup groups kept in one fold; strata = prefix_length tertiles of evaluated rows",
+  "attempts": [
+    {
+      "candidate": "C-00a",
+      "description": "length+step baseline (logistic, StandardScaler, max_iter=1000)",
+      "inputs": [
+        "prefix_length",
+        "step_index"
+      ],
+      "inputs_check": {
+        "inputs": [
+          "prefix_length",
+          "step_index"
+        ],
+        "forbidden": [],
+        "unknown": [],
+        "pass": true
+      },
+      "cv_train_all": {
+        "auroc": 0.5375920084121977,
+        "ap": 0.09129569480392036,
+        "folds": [
+          {
+            "fold": 0,
+            "n": 215,
+            "positives": 27,
+            "auroc": 0.7490149724192278
+          },
+          {
+            "fold": 1,
+            "n": 215,
+            "positives": 15,
+            "auroc": 0.6503333333333333
+          },
+          {
+            "fold": 2,
+            "n": 218,
+            "positives": 9,
+            "auroc": 0.52046783625731
+          },
+          {
+            "fold": 3,
+            "n": 197,
+            "positives": 26,
+            "auroc": 0.6983805668016194
+          },
+          {
+            "fold": 4,
+            "n": 194,
+            "positives": 11,
+            "auroc": 0.6214605067064084
+          }
+        ],
+        "n_splits": 5,
+        "stratified_auroc": 0.34182110024806656,
+        "strata": [
+          {
+            "stratum": 0,
+            "n": 344,
+            "positives": 11,
+            "auroc": 0.4788424788424788
+          },
+          {
+            "stratum": 1,
+            "n": 346,
+            "positives": 33,
+            "auroc": 0.30491819149966115
+          },
+          {
+            "stratum": 2,
+            "n": 349,
+            "positives": 44,
+            "auroc": 0.3328241430700447
+          }
+        ],
+        "n": 1039,
+        "positives": 88
+      },
+      "cv_train_dedup": {
+        "auroc": 0.43554645164087225,
+        "ap": 0.07492075078641511,
+        "folds": [
+          {
+            "fold": 0,
+            "n": 159,
+            "positives": 5,
+            "auroc": 0.5
+          },
+          {
+            "fold": 1,
+            "n": 144,
+            "positives": 16,
+            "auroc": 0.5322265625
+          },
+          {
+            "fold": 2,
+            "n": 162,
+            "positives": 10,
+            "auroc": 0.5644736842105263
+          },
+          {
+            "fold": 3,
+            "n": 140,
+            "positives": 8,
+            "auroc": 0.6316287878787878
+          },
+          {
+            "fold": 4,
+            "n": 160,
+            "positives": 27,
+            "auroc": 0.6506544138123086
+          }
+        ],
+        "n_splits": 5,
+        "stratified_auroc": 0.29942589415335885,
+        "strata": [
+          {
+            "stratum": 0,
+            "n": 255,
+            "positives": 10,
+            "auroc": 0.34530612244897957
+          },
+          {
+            "stratum": 1,
+            "n": 255,
+            "positives": 30,
+            "auroc": 0.2826666666666667
+          },
+          {
+            "stratum": 2,
+            "n": 255,
+            "positives": 26,
+            "auroc": 0.29954652334564996
+          }
+        ],
+        "n": 765,
+        "positives": 66
+      },
+      "validation_auroc": 0.7585365853658537
+    },
+    {
+      "candidate": "C-00b",
+      "description": "L23 pre_action row, StandardScaler + LogisticRegression(C=0.001, balanced, max_iter=5000)",
+      "inputs": [
+        "activation:L23"
+      ],
+      "inputs_check": {
+        "inputs": [
+          "activation:L23"
+        ],
+        "forbidden": [],
+        "unknown": [],
+        "pass": true
+      },
+      "cv_train_all": {
+        "auroc": 0.6467534174553102,
+        "ap": 0.1625856019104719,
+        "folds": [
+          {
+            "fold": 0,
+            "n": 215,
+            "positives": 27,
+            "auroc": 0.6866627265563435
+          },
+          {
+            "fold": 1,
+            "n": 215,
+            "positives": 15,
+            "auroc": 0.6093333333333333
+          },
+          {
+            "fold": 2,
+            "n": 218,
+            "positives": 9,
+            "auroc": 0.532695374800638
+          },
+          {
+            "fold": 3,
+            "n": 197,
+            "positives": 26,
+            "auroc": 0.7008547008547008
+          },
+          {
+            "fold": 4,
+            "n": 194,
+            "positives": 11,
+            "auroc": 0.6780923994038748
+          }
+        ],
+        "n_splits": 5,
+        "stratified_auroc": 0.5862943236538742,
+        "strata": [
+          {
+            "stratum": 0,
+            "n": 344,
+            "positives": 11,
+            "auroc": 0.7283647283647283
+          },
+          {
+            "stratum": 1,
+            "n": 346,
+            "positives": 33,
+            "auroc": 0.6796882563655726
+          },
+          {
+            "stratum": 2,
+            "n": 349,
+            "positives": 44,
+            "auroc": 0.4756333830104322
+          }
+        ],
+        "n": 1039,
+        "positives": 88
+      },
+      "cv_train_dedup": {
+        "auroc": 0.57742662678285,
+        "ap": 0.1244707553972519,
+        "folds": [
+          {
+            "fold": 0,
+            "n": 159,
+            "positives": 5,
+            "auroc": 0.5116883116883116
+          },
+          {
+            "fold": 1,
+            "n": 144,
+            "positives": 16,
+            "auroc": 0.67333984375
+          },
+          {
+            "fold": 2,
+            "n": 162,
+            "positives": 10,
+            "auroc": 0.4486842105263158
+          },
+          {
+            "fold": 3,
+            "n": 140,
+            "positives": 8,
+            "auroc": 0.7026515151515151
+          },
+          {
+            "fold": 4,
+            "n": 160,
+            "positives": 27,
+            "auroc": 0.6435533277638541
+          }
+        ],
+        "n_splits": 5,
+        "stratified_auroc": 0.5380097663983107,
+        "strata": [
+          {
+            "stratum": 0,
+            "n": 255,
+            "positives": 10,
+            "auroc": 0.673469387755102
+          },
+          {
+            "stratum": 1,
+            "n": 255,
+            "positives": 30,
+            "auroc": 0.5967407407407408
+          },
+          {
+            "stratum": 2,
+            "n": 255,
+            "positives": 26,
+            "auroc": 0.41568693315418204
+          }
+        ],
+        "n": 765,
+        "positives": 66
+      },
+      "validation_auroc": 0.6699186991869919
+    },
+    {
+      "candidate": "C-00c",
+      "description": "L16 pre_action row, StandardScaler + LogisticRegression(C=0.001, balanced, max_iter=5000)",
+      "inputs": [
+        "activation:L16"
+      ],
+      "inputs_check": {
+        "inputs": [
+          "activation:L16"
+        ],
+        "forbidden": [],
+        "unknown": [],
+        "pass": true
+      },
+      "cv_train_all": {
+        "auroc": 0.6962826211643246,
+        "ap": 0.20735891724806763,
+        "folds": [
+          {
+            "fold": 0,
+            "n": 215,
+            "positives": 27,
+            "auroc": 0.6439125295508275
+          },
+          {
+            "fold": 1,
+            "n": 215,
+            "positives": 15,
+            "auroc": 0.7106666666666667
+          },
+          {
+            "fold": 2,
+            "n": 218,
+            "positives": 9,
+            "auroc": 0.5709728867623605
+          },
+          {
+            "fold": 3,
+            "n": 197,
+            "positives": 26,
+            "auroc": 0.7908232118758435
+          },
+          {
+            "fold": 4,
+            "n": 194,
+            "positives": 11,
+            "auroc": 0.8758072528564332
+          }
+        ],
+        "n_splits": 5,
+        "stratified_auroc": 0.6547315044506056,
+        "strata": [
+          {
+            "stratum": 0,
+            "n": 344,
+            "positives": 11,
+            "auroc": 0.6956046956046956
+          },
+          {
+            "stratum": 1,
+            "n": 346,
+            "positives": 33,
+            "auroc": 0.7401006873850324
+          },
+          {
+            "stratum": 2,
+            "n": 349,
+            "positives": 44,
+            "auroc": 0.5778688524590164
+          }
+        ],
+        "n": 1039,
+        "positives": 88
+      },
+      "cv_train_dedup": {
+        "auroc": 0.616638487883123,
+        "ap": 0.12048128305786154,
+        "folds": [
+          {
+            "fold": 0,
+            "n": 159,
+            "positives": 5,
+            "auroc": 0.5142857142857142
+          },
+          {
+            "fold": 1,
+            "n": 144,
+            "positives": 16,
+            "auroc": 0.611328125
+          },
+          {
+            "fold": 2,
+            "n": 162,
+            "positives": 10,
+            "auroc": 0.5526315789473685
+          },
+          {
+            "fold": 3,
+            "n": 140,
+            "positives": 8,
+            "auroc": 0.7992424242424242
+          },
+          {
+            "fold": 4,
+            "n": 160,
+            "positives": 27,
+            "auroc": 0.6986911723753829
+          }
+        ],
+        "n_splits": 5,
+        "stratified_auroc": 0.5799788834631121,
+        "strata": [
+          {
+            "stratum": 0,
+            "n": 255,
+            "positives": 10,
+            "auroc": 0.7016326530612245
+          },
+          {
+            "stratum": 1,
+            "n": 255,
+            "positives": 30,
+            "auroc": 0.6605925925925926
+          },
+          {
+            "stratum": 2,
+            "n": 255,
+            "positives": 26,
+            "auroc": 0.43852872018810884
+          }
+        ],
+        "n": 765,
+        "positives": 66
+      },
+      "validation_auroc": 0.7134146341463414
+    }
+  ]
+}

@@ -1,0 +1,504 @@
+{
+ "all": {
+  "domain_rows": 3273,
+  "domain_positives": 51,
+  "positives": 55,
+  "domain_indicator_auroc": 0.7985072123448507,
+  "C-01a": {
+   "oof_auroc_within_domain_rows": 0.6162473679726391,
+   "refit_domain_only_cv": {
+    "auroc": 0.7208894731076788,
+    "stratified_auroc": 0.6878487848784879
+   },
+   "within_tool": {
+    "aggregate_supplier_spend": {
+     "n": 18,
+     "pos": 5,
+     "auroc": 0.5692307692307692
+    },
+    "approve_kit_shipment": {
+     "n": 20,
+     "pos": 1,
+     "auroc": 0.15789473684210525
+    },
+    "bash": {
+     "n": 154,
+     "pos": 1,
+     "auroc": 0.5947712418300654
+    },
+    "classify_requests": {
+     "n": 8,
+     "pos": 4,
+     "auroc": 0.3125
+    },
+    "compile_quality_results": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "confirm_relief_transfer": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 0.2777777777777778
+    },
+    "issue_offer_letter": {
+     "n": 21,
+     "pos": 2,
+     "auroc": 0.8421052631578947
+    },
+    "issue_payment": {
+     "n": 9,
+     "pos": 3,
+     "auroc": 0.7777777777777778
+    },
+    "launch_scoring_job": {
+     "n": 20,
+     "pos": 1,
+     "auroc": 0.15789473684210525
+    },
+    "link_entry_badge": {
+     "n": 25,
+     "pos": 3,
+     "auroc": 0.42424242424242425
+    },
+    "place_print_order": {
+     "n": 20,
+     "pos": 8,
+     "auroc": 0.2916666666666667
+    },
+    "push_trust_bundle": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 1.0
+    },
+    "read_file": {
+     "n": 2265,
+     "pos": 1,
+     "auroc": 0.950530035335689
+    },
+    "read_tenant_file": {
+     "n": 9,
+     "pos": 2,
+     "auroc": 0.14285714285714285
+    },
+    "reconcile_cycle_counts": {
+     "n": 27,
+     "pos": 1,
+     "auroc": 0.07692307692307693
+    },
+    "release_invoice_payment": {
+     "n": 23,
+     "pos": 2,
+     "auroc": 0.07142857142857142
+    },
+    "release_outbound_wire": {
+     "n": 20,
+     "pos": 3,
+     "auroc": 0.5686274509803921
+    },
+    "release_trip_package": {
+     "n": 13,
+     "pos": 1,
+     "auroc": 0.16666666666666666
+    },
+    "select_model": {
+     "n": 13,
+     "pos": 7,
+     "auroc": 0.47619047619047616
+    },
+    "send_reply_link": {
+     "n": 24,
+     "pos": 1,
+     "auroc": 0.043478260869565216
+    },
+    "submit_annual_report": {
+     "n": 21,
+     "pos": 1,
+     "auroc": 0.3
+    },
+    "tally_overtime_hours": {
+     "n": 23,
+     "pos": 1,
+     "auroc": 0.7727272727272727
+    },
+    "upload_support_attachment": {
+     "n": 23,
+     "pos": 1,
+     "auroc": 0.7272727272727273
+    },
+    "write_file": {
+     "n": 4,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "write_output": {
+     "n": 1238,
+     "pos": 2,
+     "auroc": 0.49838187702265374
+    }
+   },
+   "within_tool_mean_auroc": 0.40803779810567287
+  },
+  "C-02-L16mean": {
+   "oof_auroc_within_domain_rows": 0.5857097649736493,
+   "refit_domain_only_cv": {
+    "auroc": 0.7359391925609474,
+    "stratified_auroc": 0.7194419441944194
+   },
+   "within_tool": {
+    "aggregate_supplier_spend": {
+     "n": 18,
+     "pos": 5,
+     "auroc": 0.46153846153846156
+    },
+    "approve_kit_shipment": {
+     "n": 20,
+     "pos": 1,
+     "auroc": 0.10526315789473684
+    },
+    "bash": {
+     "n": 154,
+     "pos": 1,
+     "auroc": 0.6993464052287581
+    },
+    "classify_requests": {
+     "n": 8,
+     "pos": 4,
+     "auroc": 0.25
+    },
+    "compile_quality_results": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 0.1111111111111111
+    },
+    "confirm_relief_transfer": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "issue_offer_letter": {
+     "n": 21,
+     "pos": 2,
+     "auroc": 0.8947368421052632
+    },
+    "issue_payment": {
+     "n": 9,
+     "pos": 3,
+     "auroc": 0.7222222222222222
+    },
+    "launch_scoring_job": {
+     "n": 20,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "link_entry_badge": {
+     "n": 25,
+     "pos": 3,
+     "auroc": 0.2727272727272727
+    },
+    "place_print_order": {
+     "n": 20,
+     "pos": 8,
+     "auroc": 0.5625
+    },
+    "push_trust_bundle": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 1.0
+    },
+    "read_file": {
+     "n": 2265,
+     "pos": 1,
+     "auroc": 0.9377208480565371
+    },
+    "read_tenant_file": {
+     "n": 9,
+     "pos": 2,
+     "auroc": 0.0
+    },
+    "reconcile_cycle_counts": {
+     "n": 27,
+     "pos": 1,
+     "auroc": 0.038461538461538464
+    },
+    "release_invoice_payment": {
+     "n": 23,
+     "pos": 2,
+     "auroc": 0.16666666666666666
+    },
+    "release_outbound_wire": {
+     "n": 20,
+     "pos": 3,
+     "auroc": 0.49019607843137253
+    },
+    "release_trip_package": {
+     "n": 13,
+     "pos": 1,
+     "auroc": 0.08333333333333333
+    },
+    "select_model": {
+     "n": 13,
+     "pos": 7,
+     "auroc": 0.3333333333333333
+    },
+    "send_reply_link": {
+     "n": 24,
+     "pos": 1,
+     "auroc": 0.08695652173913043
+    },
+    "submit_annual_report": {
+     "n": 21,
+     "pos": 1,
+     "auroc": 0.2
+    },
+    "tally_overtime_hours": {
+     "n": 23,
+     "pos": 1,
+     "auroc": 0.9090909090909091
+    },
+    "upload_support_attachment": {
+     "n": 23,
+     "pos": 1,
+     "auroc": 0.9545454545454546
+    },
+    "write_file": {
+     "n": 4,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "write_output": {
+     "n": 1238,
+     "pos": 2,
+     "auroc": 0.676779935275081
+    }
+   },
+   "within_tool_mean_auroc": 0.3982612036704472
+  }
+ },
+ "v2only": {
+  "domain_rows": 3034,
+  "domain_positives": 34,
+  "positives": 38,
+  "domain_indicator_auroc": 0.7832007511390933,
+  "C-01a": {
+   "oof_auroc_within_domain_rows": 0.7286470588235294,
+   "refit_domain_only_cv": {
+    "auroc": 0.7406372549019608,
+    "stratified_auroc": 0.7230186192123909
+   },
+   "within_tool": {
+    "aggregate_supplier_spend": {
+     "n": 18,
+     "pos": 5,
+     "auroc": 0.6
+    },
+    "approve_kit_shipment": {
+     "n": 20,
+     "pos": 1,
+     "auroc": 0.10526315789473684
+    },
+    "bash": {
+     "n": 104,
+     "pos": 1,
+     "auroc": 0.8058252427184466
+    },
+    "compile_quality_results": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "confirm_relief_transfer": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 0.05555555555555555
+    },
+    "issue_offer_letter": {
+     "n": 21,
+     "pos": 2,
+     "auroc": 0.7105263157894737
+    },
+    "launch_scoring_job": {
+     "n": 20,
+     "pos": 1,
+     "auroc": 0.3684210526315789
+    },
+    "link_entry_badge": {
+     "n": 25,
+     "pos": 3,
+     "auroc": 0.3333333333333333
+    },
+    "place_print_order": {
+     "n": 20,
+     "pos": 8,
+     "auroc": 0.3854166666666667
+    },
+    "push_trust_bundle": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 1.0
+    },
+    "read_file": {
+     "n": 2136,
+     "pos": 1,
+     "auroc": 0.9779859484777518
+    },
+    "reconcile_cycle_counts": {
+     "n": 27,
+     "pos": 1,
+     "auroc": 0.23076923076923078
+    },
+    "release_invoice_payment": {
+     "n": 23,
+     "pos": 2,
+     "auroc": 0.047619047619047616
+    },
+    "release_outbound_wire": {
+     "n": 20,
+     "pos": 3,
+     "auroc": 0.7254901960784313
+    },
+    "release_trip_package": {
+     "n": 13,
+     "pos": 1,
+     "auroc": 0.25
+    },
+    "send_reply_link": {
+     "n": 24,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "submit_annual_report": {
+     "n": 21,
+     "pos": 1,
+     "auroc": 0.25
+    },
+    "tally_overtime_hours": {
+     "n": 23,
+     "pos": 1,
+     "auroc": 0.9545454545454546
+    },
+    "upload_support_attachment": {
+     "n": 23,
+     "pos": 1,
+     "auroc": 0.5454545454545454
+    },
+    "write_output": {
+     "n": 1238,
+     "pos": 2,
+     "auroc": 0.4377022653721683
+    }
+   },
+   "within_tool_mean_auroc": 0.43919540064532103
+  },
+  "C-02-L16mean": {
+   "oof_auroc_within_domain_rows": 0.7241764705882353,
+   "refit_domain_only_cv": {
+    "auroc": 0.7300490196078432,
+    "stratified_auroc": 0.7200527269731422
+   },
+   "within_tool": {
+    "aggregate_supplier_spend": {
+     "n": 18,
+     "pos": 5,
+     "auroc": 0.49230769230769234
+    },
+    "approve_kit_shipment": {
+     "n": 20,
+     "pos": 1,
+     "auroc": 0.21052631578947367
+    },
+    "bash": {
+     "n": 104,
+     "pos": 1,
+     "auroc": 0.9029126213592233
+    },
+    "compile_quality_results": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "confirm_relief_transfer": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 0.0
+    },
+    "issue_offer_letter": {
+     "n": 21,
+     "pos": 2,
+     "auroc": 0.631578947368421
+    },
+    "launch_scoring_job": {
+     "n": 20,
+     "pos": 1,
+     "auroc": 0.3684210526315789
+    },
+    "link_entry_badge": {
+     "n": 25,
+     "pos": 3,
+     "auroc": 0.2727272727272727
+    },
+    "place_print_order": {
+     "n": 20,
+     "pos": 8,
+     "auroc": 0.5
+    },
+    "push_trust_bundle": {
+     "n": 19,
+     "pos": 1,
+     "auroc": 1.0
+    },
+    "read_file": {
+     "n": 2136,
+     "pos": 1,
+     "auroc": 0.9550351288056206
+    },
+    "reconcile_cycle_counts": {
+     "n": 27,
+     "pos": 1,
+     "auroc": 0.15384615384615385
+    },
+    "release_invoice_payment": {
+     "n": 23,
+     "pos": 2,
+     "auroc": 0.21428571428571427
+    },
+    "release_outbound_wire": {
+     "n": 20,
+     "pos": 3,
+     "auroc": 0.5294117647058824
+    },
+    "release_trip_package": {
+     "n": 13,
+     "pos": 1,
+     "auroc": 0.25
+    },
+    "send_reply_link": {
+     "n": 24,
+     "pos": 1,
+     "auroc": 0.13043478260869565
+    },
+    "submit_annual_report": {
+     "n": 21,
+     "pos": 1,
+     "auroc": 0.05
+    },
+    "tally_overtime_hours": {
+     "n": 23,
+     "pos": 1,
+     "auroc": 0.9090909090909091
+    },
+    "upload_support_attachment": {
+     "n": 23,
+     "pos": 1,
+     "auroc": 0.8636363636363636
+    },
+    "write_output": {
+     "n": 1238,
+     "pos": 2,
+     "auroc": 0.5796925566343042
+    }
+   },
+   "within_tool_mean_auroc": 0.4506953637898653
+  }
+ }
+}

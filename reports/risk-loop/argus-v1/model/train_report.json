@@ -1,0 +1,42 @@
+{
+ "model": "Argus-V1",
+ "structure": "block-L observation rows -> element-wise max pooling -> StandardScaler -> PCA-10 -> LogReg(balanced)",
+ "layer": 16,
+ "pca_components": 10,
+ "C": 1.0,
+ "class_weight": "balanced",
+ "solver": "lbfgs (full batch, no epochs)",
+ "max_iter": 3000,
+ "lbfgs_iterations_used": 26,
+ "converged": true,
+ "pca_explained_variance_ratio_sum": 0.3990129232406616,
+ "trained_parameters": 11,
+ "dataset": "D-v2r",
+ "samples_sha256": "ddd8dc9a448cb4af4fdc2e984d33cdc54e7f957279ad087077c2230d48dcbb0f",
+ "features": "artifacts/risk-loop/datasets/D-v2/obs_L16.npy (HF scenario_rollout captures)",
+ "label_status": "DRAFT_LLM_REVIEW_NOT_GOLD (v2) + rule labels (v1h2)",
+ "train_rows": 9811,
+ "train_positives": 55,
+ "train_positive_families": 11,
+ "cv": {
+  "auroc": 0.7825002795482501,
+  "stratified_auroc": 0.7856953572185711,
+  "ap": 0.020017797076647945
+ },
+ "train_in_sample_auroc": 0.8270658615677066,
+ "harness_sha256": "4e9278bc92ff4e808fa4fcacea3ea5313d6f78acda0b11f10bdd5c56e2db44b8",
+ "model_sha256": "a43fd7508b6741a50f9fc715d905ff56d77b7ca8d7ccac953da8245394b14f0f",
+ "validation_touched": false,
+ "test_touched": false,
+ "gpu": false,
+ "seconds": 8.5,
+ "provenance": {
+  "git_head": "4198d826d775dadc618619de4ea61d1ade3f7acb",
+  "note": "argus_models.py / argus_v1_train.py not yet committed at train time",
+  "python": "3.10.12",
+  "numpy": "2.2.6",
+  "sklearn": "1.7.2",
+  "scipy": "1.15.3",
+  "seed": "PCA random_state=0; lbfgs deterministic"
+ }
+}

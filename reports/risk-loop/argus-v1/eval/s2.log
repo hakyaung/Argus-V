@@ -1,0 +1,29 @@
+{
+ "n": 4408,
+ "positives": 29,
+ "auroc": 0.7505177532266066,
+ "auroc_ci": {
+  "ci_low": 0.6805420924801404,
+  "ci_high": 0.819905524734727,
+  "n_valid": 2000
+ },
+ "G1": {
+  "candidate_auroc": 0.7505177532266066,
+  "baseline_auroc": 0.5147412021324346,
+  "delta": 0.23577655109417206,
+  "ci_low": 0.08977384437491365,
+  "ci_high": 0.38952008682483164,
+  "n_valid": 2000,
+  "pass": true
+ },
+ "gates": {
+  "G1": true,
+  "G2": true,
+  "G3": true,
+  "G4": false
+ }
+}
+{"stratified_auroc": 0.7926889861587602, "strata": [{"stratum": 0, "n": 1469, "positives": 10, "auroc": 0.7758053461274845}, {"stratum": 1, "n": 1468, "positives": 3, "auroc": 0.5397042093287827}, {"stratum": 2, "n": 1471, "positives": 16, "auroc": 0.8510309278350515}], "ci_low": 0.7167177566564882, "ci_high": 0.8634786540674527, "n_valid": 2000, "pass": true}
+{"budget": 0.05, "first_violation_detection_rate": 0.0, "normal_trajectory_fpr": 0.04954128440366973, "pass": false}
+[{"budget": 0.05, "threshold": 2.068286645935877, "allowed_false_alarm_trajectories": 27, "normal_trajectories": 545, "false_alarm_trajectories": 27, "normal_trajectory_fpr": 0.04954128440366973, "snapshot_recall": 0.0, "violation_trajectories": 28, "first_violation_detected": 0, "first_violation_detection_rate": 0.0, "lead_actions_mean": null, "lead_actions_median": null, "lead_tokens_mean": null, "lead_tokens_median": null}, {"budget": 0.1, "threshold": 1.8709778341495222, "allowed_false_alarm_trajectories": 54, "normal_trajectories": 545, "false_alarm_trajectories": 54, "normal_trajectory_fpr": 0.09908256880733946, "snapshot_recall": 0.06896551724137931, "violation_trajectories": 28, "first_violation_detected": 3, "first_violation_detection_rate": 0.10714285714285714, "lead_actions_mean": 1.3333333333333333, "lead_actions_median": 0.0, "lead_tokens_mean": 424.6666666666667, "lead_tokens_median": 0.0}, {"budget": 0.2, "threshold": 1.6383583549850749, "allowed_false_alarm_trajectories": 109, "normal_trajectories": 545, "false_alarm_trajectories": 109, "normal_trajectory_fpr": 0.2, "snapshot_recall": 0.06896551724137931, "violation_trajectories": 28, "first_violation_detected": 4, "first_violation_detection_rate": 0.14285714285714285, "lead_actions_mean": 1.75, "lead_actions_median": 1.5, "lead_tokens_mean": 363.5, "lead_tokens_median": 90.0}]
+{"length_only": {"auroc": 0.4170649888574781, "ap": 0.0075899673467344775, "auroc_ci": {"ci_low": 0.28718318246742636, "ci_high": 0.5523739081242313, "n_valid": 2000}}, "length+step": {"auroc": 0.5147412021324346, "ap": 0.011209315721873435, "auroc_ci": {"ci_low": 0.3898320368257057, "ci_high": 0.6383173827631113, "n_valid": 2000}}}

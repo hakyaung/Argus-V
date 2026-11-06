@@ -1,0 +1,211 @@
+{
+ "dataset": "D-v2r",
+ "label_status": "DRAFT_LLM_REVIEW_NOT_GOLD",
+ "harness_sha256": "4e9278bc92ff4e808fa4fcacea3ea5313d6f78acda0b11f10bdd5c56e2db44b8",
+ "samples_sha256": "ddd8dc9a448cb4af4fdc2e984d33cdc54e7f957279ad087077c2230d48dcbb0f",
+ "validation_touched": false,
+ "all_train": {
+  "rows": 9811,
+  "positives": 55,
+  "positive_families": 11,
+  "length+step": {
+   "auroc": 0.35407022252040704,
+   "stratified_auroc": 0.32401420394318425
+  },
+  "G0_threshold": 0.6,
+  "configs": {
+   "C-01a": {
+    "desc": "L11 mean over all observation rows; StandardScaler + PCA-10 + LogReg(C=1, balanced)",
+    "auroc": 0.7805676693130568,
+    "stratified_auroc": 0.7855363578545685,
+    "ap": 0.02211804046006722,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.7822878228782287,
+     "F03": 0.9104482711493782,
+     "F04": 0.8688627511275113,
+     "F06": 0.7929684296842968,
+     "F08": 0.5846658466584665,
+     "F10": 0.8280032800328003,
+     "F15": 0.9451277846111794,
+     "beneficiary_binding": 0.73906655733224,
+     "model_allowlist": 0.7164635282716464,
+     "source_immutability": 0.03925789257892579,
+     "tenant_access": 0.41887043870438706
+    }
+   },
+   "C-01b": {
+    "desc": "L11 MIL on last 4 observation rows; instance StandardScaler + PCA-10 + LogReg(C=1, balanced); bag = mean",
+    "auroc": 0.7239833761973984,
+    "stratified_auroc": 0.7466610133559466,
+    "ap": 0.01777185793254544,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.7488212382123821,
+     "F03": 0.8316933169331693,
+     "F04": 0.8054018040180402,
+     "F06": 0.6872693726937269,
+     "F08": 0.5144526445264452,
+     "F10": 0.7911029110291103,
+     "F15": 0.988656553232199,
+     "beneficiary_binding": 0.6524531911985787,
+     "model_allowlist": 0.7085336762458534,
+     "source_immutability": 0.17384173841738418,
+     "tenant_access": 0.21796842968429683
+    }
+   },
+   "C-01c": {
+    "desc": "L23 MIL on all observation rows; instance StandardScaler + PCA-10 + LogReg(C=1, balanced); bag = max",
+    "auroc": 0.6957583212195758,
+    "stratified_auroc": 0.6637163451346194,
+    "ap": 0.010262158909361935,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.47662976629766296,
+     "F03": 0.7648398706209284,
+     "F04": 0.7822237597375974,
+     "F06": 0.7406929069290693,
+     "F08": 0.7379561295612956,
+     "F10": 0.7061808118081181,
+     "F15": 0.4664821648216482,
+     "beneficiary_binding": 0.6574757414240809,
+     "model_allowlist": 0.6969883335196988,
+     "source_immutability": 0.5891758917589176,
+     "tenant_access": 0.41830668306683066
+    }
+   },
+   "C-02-L16mean": {
+    "desc": "L16 mean over all observation rows",
+    "auroc": 0.7510175556301018,
+    "stratified_auroc": 0.7712794148823404,
+    "ap": 0.02915359189286672,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.8850451004510045,
+     "F03": 0.9277367773677737,
+     "F04": 0.8613033005330053,
+     "F06": 0.7931016810168102,
+     "F08": 0.6416564165641656,
+     "F10": 0.8107062320623206,
+     "F15": 0.9498086647533142,
+     "beneficiary_binding": 0.6764384310509772,
+     "model_allowlist": 0.5804353498080436,
+     "source_immutability": 0.023267732677326774,
+     "tenant_access": 0.27593275932759326
+    }
+   },
+   "C-02-L23mean": {
+    "desc": "L23 mean over all observation rows",
+    "auroc": 0.700510641470051,
+    "stratified_auroc": 0.683564765740937,
+    "ap": 0.0147620063391573,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.7472837228372283,
+     "F03": 0.7685640745296342,
+     "F04": 0.8315011275112751,
+     "F06": 0.732380073800738,
+     "F08": 0.5708282082820828,
+     "F10": 0.7650932759327593,
+     "F15": 0.7525283586169195,
+     "beneficiary_binding": 0.5037583709170425,
+     "model_allowlist": 0.6335588355883559,
+     "source_immutability": 0.06590815908159081,
+     "tenant_access": 0.5673431734317343
+    }
+   }
+  }
+ },
+ "v2_only_train": {
+  "rows": 9175,
+  "positives": 38,
+  "positive_families": 7,
+  "length+step": {
+   "auroc": 0.6442544195664821,
+   "stratified_auroc": 0.675801917989418
+  },
+  "G0_threshold": 0.705801917989418,
+  "configs": {
+   "C-01a": {
+    "desc": "L11 mean over all observation rows; StandardScaler + PCA-10 + LogReg(C=1, balanced)",
+    "auroc": 0.8440695149277374,
+    "stratified_auroc": 0.8353587962962963,
+    "ap": 0.027740862340149674,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.7457042793039291,
+     "F03": 0.9436844089355855,
+     "F04": 0.8742202035679107,
+     "F06": 0.7932034584655795,
+     "F08": 0.6156287621757689,
+     "F10": 0.8021779577541863,
+     "F15": 0.9081025865528437
+    }
+   },
+   "C-01b": {
+    "desc": "L11 MIL on last 4 observation rows; instance StandardScaler + PCA-10 + LogReg(C=1, balanced); bag = mean",
+    "auroc": 0.786965087008865,
+    "stratified_auroc": 0.7820353835978836,
+    "ap": 0.015549372343534623,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.7822589471380103,
+     "F03": 0.8436029331290358,
+     "F04": 0.8262011601182008,
+     "F06": 0.6918244500383058,
+     "F08": 0.5551056145343111,
+     "F10": 0.7978275145014775,
+     "F15": 0.9727846484987779
+    }
+   },
+   "C-01c": {
+    "desc": "L23 MIL on all observation rows; instance StandardScaler + PCA-10 + LogReg(C=1, balanced); bag = max",
+    "auroc": 0.7346992851506022,
+    "stratified_auroc": 0.7196593915343915,
+    "ap": 0.009579273425980944,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.4863740833971763,
+     "F03": 0.7874575900186057,
+     "F04": 0.7338021232351976,
+     "F06": 0.7898544379993433,
+     "F08": 0.7074532122140746,
+     "F10": 0.760342563204553,
+     "F15": 0.544489438546569
+    }
+   },
+   "C-02-L16mean": {
+    "desc": "L16 mean over all observation rows",
+    "auroc": 0.8536315616665611,
+    "stratified_auroc": 0.8384589947089947,
+    "ap": 0.047482316629042495,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.8194702856517456,
+     "F03": 0.9376162854328555,
+     "F04": 0.8791315530261574,
+     "F06": 0.8085476633468316,
+     "F08": 0.6815147203677355,
+     "F10": 0.8012750355696618,
+     "F15": 0.8912845208128124
+    }
+   },
+   "C-02-L23mean": {
+    "desc": "L23 mean over all observation rows",
+    "auroc": 0.7624177001549513,
+    "stratified_auroc": 0.7249090608465608,
+    "ap": 0.01395397777260082,
+    "G0_pass": true,
+    "per_positive_family_auroc": {
+     "F01": 0.6895042136368611,
+     "F03": 0.8118881714153685,
+     "F04": 0.8613467221188574,
+     "F06": 0.7487796869869761,
+     "F08": 0.4991791616504323,
+     "F10": 0.6652073984896575,
+     "F15": 0.7493706905986648
+    }
+   }
+  }
+ }
+}

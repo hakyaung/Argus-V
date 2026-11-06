@@ -1,0 +1,77 @@
+{
+  "label_shuffle": {
+    "aurocs": [
+      0.45155816843514,
+      0.45500549660644296,
+      0.5525881846859765,
+      0.5780697352069591,
+      0.4416822005544403
+    ],
+    "mean": 0.49578075709779174,
+    "pass": true
+  },
+  "inputs": {
+    "inputs": [
+      "activation:L16"
+    ],
+    "forbidden": [],
+    "unknown": [],
+    "pass": true
+  },
+  "length_correlation": 0.28112975551250535,
+  "length_residual_G2": {
+    "stratified_auroc": 0.6628787878787878,
+    "strata": [
+      {
+        "stratum": 0,
+        "n": 72,
+        "positives": 0,
+        "auroc": null
+      },
+      {
+        "stratum": 1,
+        "n": 72,
+        "positives": 4,
+        "auroc": 0.6139705882352942
+      },
+      {
+        "stratum": 2,
+        "n": 73,
+        "positives": 8,
+        "auroc": 0.6884615384615385
+      }
+    ],
+    "ci_low": 0.5285081845238095,
+    "ci_high": 0.7956987743138821,
+    "n_valid": 2000,
+    "pass": true
+  },
+  "after_first_violation_excluded_G1": {
+    "n": 214,
+    "positives": 9,
+    "candidate_auroc": 0.6943089430894309,
+    "baseline_auroc": 0.7295392953929539,
+    "delta": -0.035230352303523005,
+    "ci_low": -0.22710976758793966,
+    "ci_high": 0.15426923822446184,
+    "n_valid": 2000,
+    "pass": false
+  },
+  "leakage": {
+    "condition_ovr_auroc": {
+      "C0": 0.5476620509733092,
+      "C1": 0.47278911564625853,
+      "C2": 0.4829850746268657
+    },
+    "family_eta2": 0.06215084515760311
+  },
+  "pass": {
+    "label_shuffle": true,
+    "inputs": true,
+    "length_residual_G2": true,
+    "after_first_violation_G1": false
+  },
+  "val_auroc_recomputed": 0.7134146341463414,
+  "val_auroc_reported": 0.7134146341463414,
+  "train_oof_length_correlation": 0.5334230105370553
+}
