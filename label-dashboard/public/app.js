@@ -16,7 +16,7 @@
     ["setup-state", "author-view", "dashboard-view"].forEach((id) => $(id).classList.toggle("hidden", id !== view));
   }
   async function api(path, options = {}) {
-    const response = await fetch(path, { ...options, headers: { "content-type": "application/json", ...(state.authorName ? { "x-author-name": state.authorName } : {}), ...(state.teamKey ? { "x-team-access-key": state.teamKey } : {}), ...(options.headers || {}) } });
+    const response = await fetch(path, { ...options, headers: { "content-type": "application/json", ...(state.authorName ? { "x-author-name": encodeURIComponent(state.authorName) } : {}), ...(state.teamKey ? { "x-team-access-key": state.teamKey } : {}), ...(options.headers || {}) } });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || `요청 오류 (${response.status})`);
     return result;
@@ -172,19 +172,25 @@
   }
   async function claimNext() {
     if (state.hfReadOnly) { toast("HF 원본 목록은 읽기 전용입니다. 작업 저장에는 Vercel API와 HF_TOKEN 설정이 필요합니다."); return; }
+    const button = $("claim-next");
+    if (button.disabled) return;
+    button.disabled = true; button.textContent = "작업 배정 중…";
     try {
       const data = await api("/api/claim", { method: "POST", body: "{}" });
       if (!data.task) { toast("배정 가능한 작업이 없습니다."); return; }
-      state.current = data.task; state.labels = data.labels || []; state.trajectoryLabel = data.trajectory_label || null; renderTask(); await loadDashboard(); startHeartbeat();
+      state.current = data; state.labels = data.labels || []; state.trajectoryLabel = data.trajectory_label || null; renderTask(); startHeartbeat();
+      void loadDashboard().catch((error) => toast(`작업은 배정됐지만 목록 갱신에 실패했습니다: ${error.message}`));
     } catch (error) { toast(error.message); }
+    finally { button.disabled = false; button.textContent = "다음 작업 배정받기 →"; }
   }
   async function claimSelected(unit_id) {
     if (state.hfReadOnly) { toast("HF 원본 목록은 읽기 전용입니다. 작업 저장에는 Vercel API와 HF_TOKEN 설정이 필요합니다."); return; }
     try {
       const data = await api("/api/claim", { method: "POST", body: JSON.stringify({ unit_id }) });
       if (!data.task) { toast("이미 다른 팀원이 예약했거나 작업 가능한 상태가 아닙니다."); await loadDashboard(); return false; }
-      state.current = data.task; state.labels = data.labels || []; state.trajectoryLabel = data.trajectory_label || null;
-      renderTask(); await loadDashboard(); startHeartbeat();
+      state.current = data; state.labels = data.labels || []; state.trajectoryLabel = data.trajectory_label || null;
+      renderTask(); startHeartbeat();
+      void loadDashboard().catch((error) => toast(`작업은 배정됐지만 목록 갱신에 실패했습니다: ${error.message}`));
       return true;
     } catch (error) { toast(error.message); return false; }
   }

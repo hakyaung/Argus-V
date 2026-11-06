@@ -16,7 +16,12 @@ async function requireAuthor(req) {
   if (expectedBuffer.length !== suppliedBuffer.length || !timingSafeEqual(expectedBuffer, suppliedBuffer)) {
     throw Object.assign(new Error("TEAM_ACCESS_KEY_INVALID"), { status: 403 });
   }
-  const displayName = String(req.headers["x-author-name"] || "").trim();
+  let displayName;
+  try {
+    displayName = decodeURIComponent(String(req.headers["x-author-name"] || "")).trim();
+  } catch {
+    throw Object.assign(new Error("AUTHOR_NAME_INVALID_ENCODING"), { status: 400 });
+  }
   if (!displayName || displayName.length > 80 || /[\u0000-\u001f\u007f]/.test(displayName)) {
     throw Object.assign(new Error("AUTHOR_NAME_REQUIRED"), { status: 428 });
   }
