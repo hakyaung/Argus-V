@@ -199,18 +199,63 @@
         confirm_takeover = true;
       }
     }
-    button.disabled = true; button.textContent = action === "approve" ? "사람 승인 저장 중…" : action === "edit" ? "수정 승인 저장 중…" : "자동값 복원 중…";
+    button.disabled = true;
+    button.textContent = "작업 예약 중…";
+    let slowTimer = setTimeout(() => {
+      if (button.isConnected && button.disabled) button.textContent = "HF 응답 지연 · 처리 상태 확인 중…";
+    }, 15000);
     let lease = null;
     try {
       lease = await api("/api/claim", { method: "POST", body: JSON.stringify({ unit_id, mode, confirm_takeover }) });
       if (!lease?.lease_token) throw new Error("작업 예약에 실패했습니다. 다른 팀원이 예약했는지 새로고침해 주세요.");
+      button.textContent = action === "approve" ? "HF에 사람 승인 저장 중…" : action === "edit" ? "HF에 수정 승인 저장 중…" : "HF에 승인 취소 저장 중…";
+      clearTimeout(slowTimer);
+      slowTimer = setTimeout(() => {
+        if (button.isConnected && button.disabled) button.textContent = "HF 응답 지연 · 중복 클릭하지 말고 기다려 주세요…";
+      }, 15000);
       const result = await api("/api/auto-review", { method: "POST", body: JSON.stringify({ unit_id, step_index, lease_token: lease.lease_token, action, labels, notes }) });
+      clearTimeout(slowTimer);
+      const savedAt = new Date().toISOString();
+      const originalTuple = axes.map(([key]) => source[key] == null ? null : Number(source[key]));
+      const previousItem = state.autoReviewItems.find((item) => item.source.unit_id === unit_id && Number(item.source.step_index) === step_index);
+      const previousStatus = previousItem?.status || "pending";
+      const nextStatus = action === "revert" ? "pending" : action === "edit" ? "edited" : "approved";
+      const savedDecision = { decision: result.decision, reviewer: state.authorName, reviewed_at: savedAt,
+        original_label: originalTuple,
+        final_label: action === "edit" ? axes.map(([key]) => Number(labels[key])) : originalTuple,
+        notes };
+      state.autoReviewItems = state.autoReviewItems.map((item) => {
+        if (item.source.unit_id !== unit_id || Number(item.source.step_index) !== step_index) return item;
+        const reviewedValues = action === "revert" ? item.source : action === "edit" ? { ...item.current, ...labels } : item.source;
+        const nextCurrent = action === "revert" ? { ...item.source } : {
+          ...item.current, ...reviewedValues, human_confirmed: true, reviewer: state.authorName,
+          review_status: "REVIEWED", adjudication_final: true,
+        };
+        return { ...item, current: nextCurrent, decision: savedDecision, status: nextStatus };
+      });
+      const priorIsReviewed = previousStatus === "approved" || previousStatus === "edited";
+      const nextIsReviewed = nextStatus === "approved" || nextStatus === "edited";
+      const delta = Number(nextIsReviewed) - Number(priorIsReviewed);
+      state.autoReviewSummary = { ...state.autoReviewSummary,
+        reviewed: Math.max(0, Number(state.autoReviewSummary.reviewed || 0) + delta),
+        pending: Math.max(0, Number(state.autoReviewSummary.pending || 0) - delta),
+        approved: Math.max(0, Number(state.autoReviewSummary.approved || 0) + Number(nextStatus === "approved") - Number(previousStatus === "approved")),
+        edited: Math.max(0, Number(state.autoReviewSummary.edited || 0) + Number(nextStatus === "edited") - Number(previousStatus === "edited")) };
+      renderAutoReview();
       toast(action === "revert" ? "사람 승인을 취소하고 자동값으로 복원했습니다." : action === "edit" ? "수정 라벨을 사람 최종 확인으로 저장했습니다." : "자동 라벨을 사람 최종 확인으로 승인했습니다.");
-      await Promise.all([loadDashboard(), loadAutoReview()]);
+      // The HF write is complete. Refresh the larger queue and auto-review payload
+      // in the background so the save button never looks stuck on a successful save.
+      void Promise.all([loadDashboard(), loadAutoReview()]).catch(() => {});
     } catch (error) {
-      if (lease?.lease_token) await api("/api/release", { method: "POST", body: JSON.stringify({ unit_id, lease_token: lease.lease_token }) }).catch(() => {});
+      // Do not make the visible button wait on a second HF write just to release a
+      // lease after an API error. The lease expires automatically if HF is still down.
+      if (lease?.lease_token) void api("/api/release", { method: "POST", body: JSON.stringify({ unit_id, lease_token: lease.lease_token }) }).catch(() => {});
       toast(error.message);
-    } finally { if (button.isConnected) { button.disabled = false; renderAutoReview(); } }
+      void Promise.all([loadDashboard().catch(() => {}), loadAutoReview().catch(() => {})]);
+    } finally {
+      clearTimeout(slowTimer);
+      if (button.isConnected) { button.disabled = false; renderAutoReview(); }
+    }
   }
   function renderStats() {
     for (const [id, key] of [["stat-total","total"],["stat-queued","queued"],["stat-active","in_progress"],["stat-completed","completed"],["stat-hold","needs_adjudication"]]) $(id).textContent = Number(state.summary[key] || 0).toLocaleString("ko-KR");

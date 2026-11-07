@@ -1,4 +1,8 @@
 {
   "outputDirectory": "public",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "functions": {
+    "api/claim.js": { "maxDuration": 60 },
+    "api/auto-review.js": { "maxDuration": 60 }
+  }
 }
