@@ -28,14 +28,29 @@ module.exports = async function handler(req, res) {
       const hasRevisionTrajectorySnapshot = prior.revision_in_progress && Object.prototype.hasOwnProperty.call(prior, "revision_base_trajectory_label");
       const revisionBaseTrajectory = hasRevisionTrajectorySnapshot ? prior.revision_base_trajectory_label : (prior.trajectory_label || null);
       const comparable = (value) => {
-        const { updated_at: _stamp, author_name: _author, ...record } = value || {};
-        return JSON.stringify(record);
+        const row = value || {};
+        return JSON.stringify({ action_id: row.action_id || "", step_index: Number(row.step_index),
+          gold_violation: row.gold_violation ?? null, violation_executed: row.violation_executed ?? null,
+          tool_call_error: row.tool_call_error ?? null, error_type: row.error_type || null,
+          review_notes: row.review_notes || [], exception_notes: row.exception_notes || [],
+          pre_state_evidence: row.pre_state_evidence || [], computed_check: row.computed_check || null,
+          scenario_definition_evidence: row.scenario_definition_evidence || [], public_contract: row.public_contract || [],
+          suggested_status: row.suggested_status || null, notes: row.notes || "", review_status: row.review_status || "draft" });
       };
       const normalized = labels.map((label) => {
         const previous = oldLabels.find((item) => Number(item.step_index) === Number(label.step_index));
         const changed = !previous || comparable(previous) !== comparable(label);
-        return { ...label, author_name: changed ? author.displayName : (previous.author_name || author.displayName),
-          updated_at: changed ? stamp : (previous.updated_at || stamp) };
+        // An automatic label stays delegated until a reviewer explicitly confirms
+        // it in /api/auto-review. Saving an unrelated hold in the same rollout must
+        // never count as the human's final check of this untouched automatic step.
+        const awaitingAutoHumanReview = previous?.user_authorized_auto_adjudication === true && previous?.human_confirmed !== true;
+        return { ...label,
+          human_confirmed: awaitingAutoHumanReview ? false : changed ? label.review_status === "confirmed" : previous?.human_confirmed === true,
+          user_authorized_auto_adjudication: previous?.user_authorized_auto_adjudication === true || label.user_authorized_auto_adjudication === true,
+          adjudication_final: label.review_status === "confirmed" ? true : false,
+          delegation_rule_id: previous?.delegation_rule_id || label.delegation_rule_id || null,
+          author_name: changed ? author.displayName : (previous?.author_name || author.displayName),
+          updated_at: changed ? stamp : (previous?.updated_at || stamp) };
       });
       if (finalize && normalized.some((label) => label.review_status !== "hold" && [label.gold_violation,label.violation_executed,label.tool_call_error].some((value)=>![0,1].includes(value)))) {
         return { noCommit: true, value: { ok: false, error: "ALL_THREE_LABELS_REQUIRED" } };
@@ -105,11 +120,11 @@ module.exports = async function handler(req, res) {
         reviewer: author.displayName, reviewed_at: stamp, reason: trajectory.notes || "",
       });
       sidecar.review_progress = { exported_action_count: sidecar.samples.length,
-        confirmed_action_count: sidecar.samples.filter((item)=>item.review_status === "REVIEWED").length,
-        held_action_count: sidecar.samples.filter((item)=>item.review_status !== "REVIEWED").length,
-        total_pending: sidecar.samples.filter((item)=>item.review_status !== "REVIEWED").length,
+        confirmed_action_count: sidecar.samples.filter((item)=>["REVIEWED", "REVIEWED_UNDER_USER_DELEGATION"].includes(item.review_status)).length,
+        held_action_count: sidecar.samples.filter((item)=>!["REVIEWED", "REVIEWED_UNDER_USER_DELEGATION"].includes(item.review_status)).length,
+        total_pending: sidecar.samples.filter((item)=>!["REVIEWED", "REVIEWED_UNDER_USER_DELEGATION"].includes(item.review_status)).length,
         human_confirmed_action_count: sidecar.samples.filter((item)=>item.human_confirmed).length,
-        delegated_confirmed_action_count: 0 };
+        delegated_confirmed_action_count: sidecar.samples.filter((item)=>item.review_status === "REVIEWED_UNDER_USER_DELEGATION").length };
       sidecar.source_revisions = [...new Set(queue.tasks.map((task)=>task.source_revision).filter(Boolean))];
       sidecar.data_revision = sidecar.source_revisions.length === 1 ? sidecar.source_revisions[0] : null;
       sidecar.human_confirmed = sidecar.samples.length > 0 && sidecar.samples.every((sample)=>sample.human_confirmed);

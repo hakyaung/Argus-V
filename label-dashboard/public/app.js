@@ -1,6 +1,6 @@
 (() => {
   const $ = (id) => document.getElementById(id);
-  const state = { config: null, session: null, user: null, authorName: "", teamKey: "", clientId: "", tabId: "", tasks: [], summary: {}, current: null, labels: [], filter: "", status: "all", heartbeat: null, hfReadOnly: false, previewQueue: null, previewUnit: null };
+  const state = { config: null, session: null, user: null, authorName: "", teamKey: "", clientId: "", tabId: "", tasks: [], summary: {}, current: null, labels: [], filter: "", status: "all", heartbeat: null, hfReadOnly: false, previewQueue: null, previewUnit: null, autoReviewItems: [], autoReviewSummary: {}, autoReviewPage: 1, autoReviewPageCount: 1, autoReviewQuery: "", autoReviewStatus: "all" };
   const statuses = { queued: "대기", in_progress: "작업 중", completed: "완료", revision_recovery: "수정 복구 필요", needs_adjudication: "판정 보류" };
   const axes = [
     ["gold_violation", "정책 위반 시도"],
@@ -138,6 +138,80 @@
     state.hfReadOnly = false; state.tasks = data.tasks || []; state.summary = data.summary || {};
     renderStats(); renderQueue();
   }
+  async function loadAutoReview() {
+    const query = new URLSearchParams({ page: String(state.autoReviewPage), limit: "25", status: state.autoReviewStatus });
+    if (state.autoReviewQuery) query.set("q", state.autoReviewQuery);
+    const data = await api(`/api/auto-review?${query}`);
+    state.autoReviewItems = data.items || []; state.autoReviewSummary = data.summary || {};
+    state.autoReviewPage = data.page || 1; state.autoReviewPageCount = data.page_count || 1;
+    $("auto-tab-count").textContent = Number(state.autoReviewSummary.pending || 0).toLocaleString("ko-KR");
+    $("auto-stat-total").textContent = Number(state.autoReviewSummary.total || 0).toLocaleString("ko-KR");
+    $("auto-stat-pending").textContent = Number(state.autoReviewSummary.pending || 0).toLocaleString("ko-KR");
+    $("auto-stat-reviewed").textContent = Number(state.autoReviewSummary.reviewed || 0).toLocaleString("ko-KR");
+    $("auto-review-page").textContent = `${state.autoReviewPage} / ${state.autoReviewPageCount}`;
+    $("auto-review-prev").disabled = state.autoReviewPage <= 1;
+    $("auto-review-next").disabled = state.autoReviewPage >= state.autoReviewPageCount;
+    renderAutoReview();
+  }
+  function labelTuple(sample) { return axes.map(([key]) => sample?.[key] == null ? "null" : String(sample[key])).join(" / "); }
+  function renderAutoReview() {
+    const list = $("auto-review-list");
+    if (!state.autoReviewItems.length) { list.innerHTML = '<div class="empty-state">조건에 맞는 자동 라벨이 없습니다.</div>'; return; }
+    list.innerHTML = state.autoReviewItems.map(({ source, current, decision, status }) => {
+      const reviewer = decision?.reviewer || (status === "approved" ? current.reviewer : "");
+      const statusText = status === "edited" ? `수정 승인 · ${reviewer}` : status === "approved" ? `사람 승인 · ${reviewer}` : decision?.decision === "unapproved" ? "승인 취소 · 다시 확인 필요" : "사람 확인 대기";
+      const sourceTuple = labelTuple(source);
+      const currentTuple = labelTuple(current);
+      const options = (key, meaning, value) => `<label class="auto-axis"><span><code>${key}</code> · ${meaning}</span><select data-auto-label="${key}" data-unit="${escapeAttr(source.unit_id)}" data-step="${source.step_index}"><option value="0" ${Number(value) === 0 ? "selected" : ""}>0 · 아님</option><option value="1" ${Number(value) === 1 ? "selected" : ""}>1 · 해당</option></select></label>`;
+      const evidence = { task: source.task, trusted_policy: source.trusted_policy, command: source.command, result: source.result, execution: source.execution, observation: source.observation, public_contract: source.public_contract };
+      return `<article class="auto-review-card" data-auto-card="${escapeAttr(source.unit_id)}:${source.step_index}">
+        <header class="auto-card-head"><div><div class="eyebrow">${escapeHtml(source.scenario_id)} · ${escapeHtml(source.condition)} · seed ${escapeHtml(source.seed)}</div><h3>${escapeHtml(source.unit_id)} · STEP ${String(source.step_index).padStart(3,"0")}</h3><small>${escapeHtml(source.action_id)} · ${escapeHtml(source.kind || "도구 행동")}</small></div><span class="auto-review-state state-${status === "pending" ? "needs_adjudication" : "completed"}">${escapeHtml(statusText)}</span></header>
+        <div class="auto-label-compare"><div><span>자동 라벨</span><strong>${escapeHtml(sourceTuple)}</strong></div><div><span>현재 최종 라벨</span><strong>${escapeHtml(currentTuple)}</strong></div></div>
+        <div class="auto-evidence-summary">${escapeHtml(source.reason || source.reason_note || "AV-LABEL-012 공개 입력 파일 읽기 기준으로 자동 확정된 행동입니다.")}</div>
+        <details class="auto-evidence"><summary>원본 행동과 자동 판정 근거 보기</summary><pre>${escapeHtml(JSON.stringify(evidence,null,2))}</pre></details>
+        <div class="auto-edit-grid">${options("gold_violation","정책 위반 시도",current.gold_violation)}${options("violation_executed","위반 실제 실행",current.violation_executed)}${options("tool_call_error","도구 호출 오류",current.tool_call_error)}
+          <label class="auto-axis"><span><code>error_type</code> · 호출 오류 유형</span><select data-auto-label="error_type" data-unit="${escapeAttr(source.unit_id)}" data-step="${source.step_index}"><option value="">선택 안 함</option>${errorTypeOptions.map(([code,meaning])=>`<option value="${escapeAttr(code)}" ${current.error_type===code?"selected":""}>${escapeHtml(code)} · ${escapeHtml(meaning)}</option>`).join("")}</select></label>
+        </div>
+        <label class="auto-review-note"><span>사람 최종 검수 메모 <small>수정 승인 시 사유를 적어 주세요.</small></span><textarea data-auto-note="1" data-unit="${escapeAttr(source.unit_id)}" data-step="${source.step_index}" placeholder="확인 근거나 수정한 이유">${escapeHtml(decision?.notes || "")}</textarea></label>
+        <footer class="auto-card-actions"><button class="button button-primary" type="button" data-auto-action="approve" data-unit="${escapeAttr(source.unit_id)}" data-step="${source.step_index}">자동 라벨 그대로 사람 승인</button><button class="button button-quiet" type="button" data-auto-action="edit" data-unit="${escapeAttr(source.unit_id)}" data-step="${source.step_index}">현재 값으로 수정 승인</button>${status !== "pending" ? `<button class="button button-quiet auto-revert" type="button" data-auto-action="revert" data-unit="${escapeAttr(source.unit_id)}" data-step="${source.step_index}">승인 취소 · 자동값 복원</button>` : ""}</footer>
+      </article>`;
+    }).join("");
+  }
+  async function submitAutoReview(button) {
+    const { unit: unit_id, step: stepIndex, autoAction: action } = button.dataset;
+    const step_index = Number(stepIndex);
+    const task = state.tasks.find((row) => row.unit_id === unit_id);
+    if (!task) { toast("대상 rollout을 찾을 수 없습니다. 새로고침해 주세요."); return; }
+    if (state.current) { toast("현재 작업을 저장하거나 반납한 뒤 자동 라벨 검수를 진행해 주세요."); return; }
+    if (action === "revert" && !window.confirm("이 사람 승인을 취소하고 자동 라벨값으로 되돌릴까요?")) return;
+    const card = button.closest("[data-auto-card]");
+    const notes = card.querySelector("[data-auto-note]").value.trim();
+    const labels = Object.fromEntries([...card.querySelectorAll("[data-auto-label]")].map((input) => [input.dataset.autoLabel,
+      input.dataset.autoLabel === "error_type" ? (input.value || null) : Number(input.value)]));
+    if (action === "edit" && !notes) { toast("수정 승인에는 사람 검수 사유가 필요합니다."); return; }
+    let mode = "new", confirm_takeover = false;
+    if (["completed", "revision_recovery"].includes(task.status)) mode = "revise";
+    if (task.status === "in_progress") {
+      if (!task.resume_available) { toast(`${task.assigned_author_name || "다른 팀원"}이 이 rollout을 작업 중입니다.`); return; }
+      mode = "resume";
+      if (task.resume_requires_takeover) {
+        if (!window.confirm("같은 작성자의 다른 탭에서 작업 중인 rollout입니다. 이 자동 검수를 이어받을까요?")) return;
+        confirm_takeover = true;
+      }
+    }
+    button.disabled = true; button.textContent = action === "approve" ? "사람 승인 저장 중…" : action === "edit" ? "수정 승인 저장 중…" : "자동값 복원 중…";
+    let lease = null;
+    try {
+      lease = await api("/api/claim", { method: "POST", body: JSON.stringify({ unit_id, mode, confirm_takeover }) });
+      if (!lease?.lease_token) throw new Error("작업 예약에 실패했습니다. 다른 팀원이 예약했는지 새로고침해 주세요.");
+      const result = await api("/api/auto-review", { method: "POST", body: JSON.stringify({ unit_id, step_index, lease_token: lease.lease_token, action, labels, notes }) });
+      toast(action === "revert" ? "사람 승인을 취소하고 자동값으로 복원했습니다." : action === "edit" ? "수정 라벨을 사람 최종 확인으로 저장했습니다." : "자동 라벨을 사람 최종 확인으로 승인했습니다.");
+      await Promise.all([loadDashboard(), loadAutoReview()]);
+    } catch (error) {
+      if (lease?.lease_token) await api("/api/release", { method: "POST", body: JSON.stringify({ unit_id, lease_token: lease.lease_token }) }).catch(() => {});
+      toast(error.message);
+    } finally { if (button.isConnected) { button.disabled = false; renderAutoReview(); } }
+  }
   function renderStats() {
     for (const [id, key] of [["stat-total","total"],["stat-queued","queued"],["stat-active","in_progress"],["stat-completed","completed"],["stat-hold","needs_adjudication"]]) $(id).textContent = Number(state.summary[key] || 0).toLocaleString("ko-KR");
   }
@@ -153,7 +227,9 @@
         ? `<button class="task-action-button" type="button" data-claim-unit="${escapeAttr(t.unit_id)}" data-claim-mode="resume" data-resume-takeover="${t.resume_requires_takeover ? "true" : "false"}">${t.resume_requires_takeover ? "기존 작업 이어받기" : "내 작업 이어하기"}</button>`
         : t.can_edit_completed
           ? `<button class="task-action-button" type="button" data-claim-unit="${escapeAttr(t.unit_id)}" data-claim-mode="revise" data-revision-recovery="${t.revision_needs_recovery ? "true" : "false"}">${t.revision_needs_recovery ? "미완료 수정 초안 이어받기" : "완료 라벨 수정"}</button>` : "";
-      return `<article class="queue-item ${state.current?.unit_id === t.unit_id ? "current" : ""}" data-unit="${escapeAttr(t.unit_id)}"><div><div class="queue-id">${escapeHtml(t.scenario_id)} · ${escapeHtml(t.condition)} · s${t.seed}</div><div class="queue-meta">${escapeHtml(t.unit_id)}${author ? ` · 작성자 ${escapeHtml(author)}` : ""}${t.revision_needs_recovery ? `<br/>미완료 수정 초안 · 이전 작성자 ${escapeHtml(t.revision_owner_name || "알 수 없음")}` : ""}${dispositionLabel ? `<br/>${escapeHtml(dispositionLabel)} · ${escapeHtml(t.disposition_note || "")}` : ""}</div></div><div class="queue-controls"><span class="state ${dispositionLabel ? "state-needs_adjudication" : `state-${t.status}`}" title="${escapeAttr(dispositionLabel || statuses[t.status] || t.status)}">${escapeHtml(dispositionLabel || statuses[t.status] || t.status)}</span><button class="preview-button" type="button" data-preview-unit="${escapeAttr(t.unit_id)}">미리보기</button>${actionButton}</div></article>`;
+      const claimButton = !actionButton && ["queued", "needs_adjudication"].includes(t.status)
+        ? `<button class="task-action-button" type="button" data-claim-unit="${escapeAttr(t.unit_id)}" data-claim-mode="new">${t.status === "needs_adjudication" ? "보류 행동 검수 시작" : "이 작업 맡기"}</button>` : actionButton;
+      return `<article class="queue-item ${state.current?.unit_id === t.unit_id ? "current" : ""}" data-unit="${escapeAttr(t.unit_id)}"><div><div class="queue-id">${escapeHtml(t.scenario_id)} · ${escapeHtml(t.condition)} · s${t.seed}</div><div class="queue-meta">${escapeHtml(t.unit_id)}${author ? ` · 작성자 ${escapeHtml(author)}` : ""}${t.revision_needs_recovery ? `<br/>미완료 수정 초안 · 이전 작성자 ${escapeHtml(t.revision_owner_name || "알 수 없음")}` : ""}${dispositionLabel ? `<br/>${escapeHtml(dispositionLabel)} · ${escapeHtml(t.disposition_note || "")}` : ""}</div></div><div class="queue-controls"><span class="state ${dispositionLabel ? "state-needs_adjudication" : `state-${t.status}`}" title="${escapeAttr(dispositionLabel || statuses[t.status] || t.status)}">${escapeHtml(dispositionLabel || statuses[t.status] || t.status)}</span><button class="preview-button" type="button" data-preview-unit="${escapeAttr(t.unit_id)}">미리보기</button>${claimButton}</div></article>`;
     }).join("");
   }
   async function previewUnit(unit_id) {
@@ -286,7 +362,18 @@
         scenario_definition_evidence_text: Array.isArray(saved.scenario_definition_evidence) ? saved.scenario_definition_evidence.map((x)=>x.detail||JSON.stringify(x)).filter(Boolean).join("\n") : "",
         public_contract_text: Array.isArray(saved.public_contract) ? saved.public_contract.map((x)=>x.detail||JSON.stringify(x)).filter(Boolean).join("\n") : "",
         suggested_status: saved.suggested_status || "",
-        review_status: saved.review_status || "draft", notes: saved.notes || "", author_name: saved.author_name || "" };
+        review_status: saved.review_status || "draft", notes: saved.notes || "", author_name: saved.author_name || "",
+        human_confirmed: saved.human_confirmed === true, user_authorized_auto_adjudication: saved.user_authorized_auto_adjudication === true,
+        delegation_rule_id: saved.delegation_rule_id || null,
+        original_evidence: { review_notes: saved.review_notes || [], exception_notes: saved.exception_notes || [],
+          pre_state_evidence: saved.pre_state_evidence || [], computed_check: saved.computed_check ?? null,
+          scenario_definition_evidence: saved.scenario_definition_evidence || [], public_contract: saved.public_contract || [],
+          review_notes_text: Array.isArray(saved.review_notes) ? saved.review_notes.map((x)=>x.detail||"").filter(Boolean).join("\n") : "",
+          exception_notes_text: Array.isArray(saved.exception_notes) ? saved.exception_notes.map((x)=>x.detail||"").filter(Boolean).join("\n") : "",
+          pre_state_evidence_text: Array.isArray(saved.pre_state_evidence) ? saved.pre_state_evidence.map((x)=>x.detail||JSON.stringify(x)).filter(Boolean).join("\n") : "",
+          computed_check_text: saved.computed_check ? JSON.stringify(saved.computed_check) : "",
+          scenario_definition_evidence_text: Array.isArray(saved.scenario_definition_evidence) ? saved.scenario_definition_evidence.map((x)=>x.detail||JSON.stringify(x)).filter(Boolean).join("\n") : "",
+          public_contract_text: Array.isArray(saved.public_contract) ? saved.public_contract.map((x)=>x.detail||JSON.stringify(x)).filter(Boolean).join("\n") : "" } };
     });
     const trajectorySaved = state.trajectoryLabel || {};
     state.trajectoryDraft = { trajectory_has_violation: trajectorySaved.trajectory_has_violation == null ? "" : String(trajectorySaved.trajectory_has_violation), review_status: trajectorySaved.review_status || "draft", notes: trajectorySaved.notes || "", author_name: trajectorySaved.author_name || "", evidence_action_id: trajectorySaved.evidence_action_id || "" };
@@ -313,7 +400,11 @@
     const select = (field, label) => `<div class="label-field"><label class="label-title"><code>${field}</code><span>${label}</span></label><small class="field-help">${axisHelp[field]}</small><select data-label="${field}" data-step="${ix}"><option value="">선택</option><option value="0" ${d[field]==="0"?"selected":""}>0 · 아니오 / 없음</option><option value="1" ${d[field]==="1"?"selected":""}>1 · 예</option></select></div>`;
     const evidenceField = (key, label, help, attr, value) => `<div class="evidence-field"><label class="label-title"><code>${key}</code><span>${label}</span></label><small class="field-help">${help}</small><textarea class="notes" ${attr} data-step="${ix}">${escapeHtml(value)}</textarea></div>`;
     const errorTypeDisabled = d.tool_call_error === "1" ? "" : "disabled";
-    return `<article class="action-card"><div class="action-head"><strong>STEP ${String(ix).padStart(3,"0")}</strong><span class="state ${d.review_status === "hold" ? "state-needs_adjudication" : d.review_status === "confirmed" ? "state-completed" : "state-queued"}">${d.review_status === "hold" ? "보류" : d.review_status === "confirmed" ? "작성됨" : "미작성"}</span></div><div class="step-content">${d.author_name ? `<div class="label-author">라벨 작성자 · ${escapeHtml(d.author_name)}</div>` : ""}<div class="step-summary">${escapeHtml(summary || "행동 상세는 아래 원본 기록에서 확인")}</div>${sourceLabel}<details class="step-json"><summary>전체 step 증거 열기 · ${escapeHtml(path)}</summary><pre>${escapeHtml(raw)}</pre></details><div class="label-grid">${axes.map(([key,label])=>select(key,label)).join("")}</div><div class="label-field error-type-field"><label class="label-title"><code>error_type</code><span>도구 호출 오류 유형</span></label><small class="field-help">tool_call_error를 1로 판정한 경우에만 선택합니다. 각 항목의 영문 코드는 저장 형식이고, 뒤의 설명은 뜻입니다.</small><select data-label="error_type" data-step="${ix}" ${errorTypeDisabled}><option value="">선택 안 함</option>${errorTypeOptions.map(([code,meaning])=>`<option value="${code}" ${d.error_type===code?"selected":""}>${code} · ${meaning}</option>`).join("")}</select></div><div class="evidence-field reason-field"><label class="label-title"><code>reason</code><span>판정 근거</span></label><small class="field-help">이 행동의 세 라벨을 선택한 핵심 이유를 적습니다. 보류할 때는 근거를 반드시 적어 주세요.</small><textarea class="notes" data-note="1" data-step="${ix}" placeholder="정책·상태·행동 증거를 근거로 간단히 설명">${escapeHtml(d.notes)}</textarea></div><details class="evidence-details"><summary>추가 근거 항목 · 모두 선택 입력</summary><div class="evidence-fields">${evidenceField("review_notes","추가 검수 메모","판정에 영향을 준 쟁점이나 적용 범위를 기록합니다.","data-review-notes=\"1\"",d.review_notes_text)}${evidenceField("exception_notes","예외 메모","일반 규칙과 다른 예외 사유와 그 범위를 기록합니다.","data-exception-notes=\"1\"",d.exception_notes_text)}${evidenceField("pre_state_evidence","사전 상태 증거","이 행동 시점까지 확인된 앞선 행동·파일·정책 상태를 기록합니다.","data-pre-state=\"1\"",d.pre_state_evidence_text)}${evidenceField("computed_check","계산·검증 결과","다른 검수자가 재현할 수 있는 계산이나 검증 결과를 기록합니다.","data-computed-check=\"1\"",d.computed_check_text)}${evidenceField("scenario_definition_evidence","시나리오 정의 근거","시나리오의 사전 정의가 판정에 주는 근거를 기록합니다.","data-scenario-evidence=\"1\"",d.scenario_definition_evidence_text)}${evidenceField("public_contract","공개 계약 근거","공개된 도구/API 설명이나 허용 인자 규약을 근거로 기록합니다.","data-public-contract=\"1\"",d.public_contract_text)}<div class="evidence-field"><label class="label-title"><code>suggested_status</code><span>제안 상태값</span></label><small class="field-help">행동 결과에서 확인되는 상태값이 판정에 필요할 때만 적습니다.</small><input class="suggested-status" data-label="suggested_status" data-step="${ix}" value="${escapeAttr(d.suggested_status)}" placeholder="예: completed, failed"/></div></div></details><label class="review-hold"><input type="checkbox" data-hold="1" data-step="${ix}" ${d.review_status === "hold" ? "checked" : ""}/> hold · 근거 부족 또는 해석 모호 — 2차 판정 보류</label></div></article>`;
+    const autoAwaitingHuman = d.user_authorized_auto_adjudication && !d.human_confirmed;
+    const reviewStateText = d.review_status === "hold" ? "사람 검수 보류" : autoAwaitingHuman ? "자동 확정 · 사람 최종 확인 대기" : d.review_status === "confirmed" ? "사람 확인" : "미작성";
+    const reviewStateClass = d.review_status === "hold" || autoAwaitingHuman ? "state-needs_adjudication" : d.review_status === "confirmed" ? "state-completed" : "state-queued";
+    const autoHint = autoAwaitingHuman ? `<div class="auto-pending-hint">자동 라벨이 입력되어 있습니다. 최종 승인 또는 수정을 하려면 <strong>자동 라벨 검수</strong> 탭을 이용하세요.</div>` : "";
+    return `<article class="action-card"><div class="action-head"><strong>STEP ${String(ix).padStart(3,"0")}</strong><span class="state ${reviewStateClass}">${reviewStateText}</span></div><div class="step-content">${d.author_name ? `<div class="label-author">라벨 작성자 · ${escapeHtml(d.author_name)}</div>` : ""}<div class="step-summary">${escapeHtml(summary || "행동 상세는 아래 원본 기록에서 확인")}</div>${autoHint}${sourceLabel}<details class="step-json"><summary>전체 step 증거 열기 · ${escapeHtml(path)}</summary><pre>${escapeHtml(raw)}</pre></details><div class="label-grid">${axes.map(([key,label])=>select(key,label)).join("")}</div><div class="label-field error-type-field"><label class="label-title"><code>error_type</code><span>도구 호출 오류 유형</span></label><small class="field-help">tool_call_error를 1로 판정한 경우에만 선택합니다. 각 항목의 영문 코드는 저장 형식이고, 뒤의 설명은 뜻입니다.</small><select data-label="error_type" data-step="${ix}" ${errorTypeDisabled}><option value="">선택 안 함</option>${errorTypeOptions.map(([code,meaning])=>`<option value="${code}" ${d.error_type===code?"selected":""}>${code} · ${meaning}</option>`).join("")}</select></div><div class="evidence-field reason-field"><label class="label-title"><code>reason</code><span>판정 근거</span></label><small class="field-help">이 행동의 세 라벨을 선택한 핵심 이유를 적습니다. 보류할 때는 근거를 반드시 적어 주세요.</small><textarea class="notes" data-note="1" data-step="${ix}" placeholder="정책·상태·행동 증거를 근거로 간단히 설명">${escapeHtml(d.notes)}</textarea></div><details class="evidence-details"><summary>추가 근거 항목 · 모두 선택 입력</summary><div class="evidence-fields">${evidenceField("review_notes","추가 검수 메모","판정에 영향을 준 쟁점이나 적용 범위를 기록합니다.","data-review-notes=\"1\"",d.review_notes_text)}${evidenceField("exception_notes","예외 메모","일반 규칙과 다른 예외 사유와 그 범위를 기록합니다.","data-exception-notes=\"1\"",d.exception_notes_text)}${evidenceField("pre_state_evidence","사전 상태 증거","이 행동 시점까지 확인된 앞선 행동·파일·정책 상태를 기록합니다.","data-pre-state=\"1\"",d.pre_state_evidence_text)}${evidenceField("computed_check","계산·검증 결과","다른 검수자가 재현할 수 있는 계산이나 검증 결과를 기록합니다.","data-computed-check=\"1\"",d.computed_check_text)}${evidenceField("scenario_definition_evidence","시나리오 정의 근거","시나리오의 사전 정의가 판정에 주는 근거를 기록합니다.","data-scenario-evidence=\"1\"",d.scenario_definition_evidence_text)}${evidenceField("public_contract","공개 계약 근거","공개된 도구/API 설명이나 허용 인자 규약을 근거로 기록합니다.","data-public-contract=\"1\"",d.public_contract_text)}<div class="evidence-field"><label class="label-title"><code>suggested_status</code><span>제안 상태값</span></label><small class="field-help">행동 결과에서 확인되는 상태값이 판정에 필요할 때만 적습니다.</small><input class="suggested-status" data-label="suggested_status" data-step="${ix}" value="${escapeAttr(d.suggested_status)}" placeholder="예: completed, failed"/></div></div></details><label class="review-hold"><input type="checkbox" data-hold="1" data-step="${ix}" ${d.review_status === "hold" ? "checked" : ""}/> hold · 근거 부족 또는 해석 모호 — 2차 판정 보류</label></div></article>`;
   }
   function onLabelChange(event) {
     const ix = Number(event.currentTarget.dataset.step); const draft = state.labelDrafts.find((x) => x.step_index === ix); if (!draft) return;
@@ -356,17 +447,22 @@
         if (state.trajectoryDraft.review_status === "hold" && !state.trajectoryDraft.notes.trim()) { toast("실행 전체를 보류하는 근거를 적어 주세요."); return false; }
         if (state.trajectoryDraft.review_status === "confirmed" && state.trajectoryDraft.trajectory_has_violation === "1" && !state.trajectoryDraft.evidence_action_id) { toast("실행 요약에 위반 있음이면 근거 행동을 직접 선택해 주세요."); return false; }
       }
-      const labels = state.labelDrafts.map((d) => ({ ...d,
+      const preserveOrConvert = (text, originalText, originalValue, convert) => text.trim() === originalText ? originalValue : text.trim() ? convert(text.trim()) : [];
+      const labels = state.labelDrafts.map((d) => ({ action_id: d.action_id, step_index: d.step_index,
         gold_violation: d.gold_violation === "" ? null : Number(d.gold_violation),
         violation_executed: d.violation_executed === "" ? null : Number(d.violation_executed),
         tool_call_error: d.tool_call_error === "" ? null : Number(d.tool_call_error),
-        review_notes: d.review_notes_text.trim() ? [{ issue: "TEAM_REVIEW_NOTE", detail: d.review_notes_text.trim() }] : [],
-        exception_notes: d.exception_notes_text.trim() ? [{ detail: d.exception_notes_text.trim() }] : [],
-        pre_state_evidence: d.pre_state_evidence_text.trim() ? [{ evidence_type: "reviewer_recorded_at_action_time", detail: d.pre_state_evidence_text.trim() }] : [],
-        computed_check: d.computed_check_text.trim() ? { reviewer_check: d.computed_check_text.trim() } : null,
-        scenario_definition_evidence: d.scenario_definition_evidence_text.trim() ? [{ detail: d.scenario_definition_evidence_text.trim() }] : [],
-        public_contract: d.public_contract_text.trim() ? [{ detail: d.public_contract_text.trim() }] : [],
-        review_status: d.review_status === "hold" ? "hold" : finalize ? "confirmed" : "draft" }));
+        error_type: d.error_type || null,
+        notes: d.notes || "", suggested_status: d.suggested_status || null,
+        review_notes: preserveOrConvert(d.review_notes_text, d.original_evidence?.review_notes_text, d.original_evidence?.review_notes, (text) => [{ issue: "TEAM_REVIEW_NOTE", detail: text }]),
+        exception_notes: preserveOrConvert(d.exception_notes_text, d.original_evidence?.exception_notes_text, d.original_evidence?.exception_notes, (text) => [{ detail: text }]),
+        pre_state_evidence: preserveOrConvert(d.pre_state_evidence_text, d.original_evidence?.pre_state_evidence_text, d.original_evidence?.pre_state_evidence, (text) => [{ evidence_type: "reviewer_recorded_at_action_time", detail: text }]),
+        computed_check: d.computed_check_text === (d.original_evidence?.computed_check_text ?? "") ? (d.original_evidence?.computed_check ?? null) : d.computed_check_text.trim() ? { reviewer_check: d.computed_check_text.trim() } : null,
+        scenario_definition_evidence: preserveOrConvert(d.scenario_definition_evidence_text, d.original_evidence?.scenario_definition_evidence_text, d.original_evidence?.scenario_definition_evidence, (text) => [{ detail: text }]),
+        public_contract: preserveOrConvert(d.public_contract_text, d.original_evidence?.public_contract_text, d.original_evidence?.public_contract, (text) => [{ detail: text }]),
+        review_status: d.review_status === "hold" ? "hold" : (finalize || (d.user_authorized_auto_adjudication && d.review_status === "confirmed")) ? "confirmed" : "draft",
+        human_confirmed: d.human_confirmed, user_authorized_auto_adjudication: d.user_authorized_auto_adjudication,
+        delegation_rule_id: d.delegation_rule_id }));
       const trajectory = { ...state.trajectoryDraft,
         review_status: state.trajectoryDraft.review_status === "hold" ? "hold" : finalize ? (state.trajectoryDraft.trajectory_has_violation === "" ? "draft" : "confirmed") : "draft",
         trajectory_has_violation: state.trajectoryDraft.trajectory_has_violation === "" ? null : Number(state.trajectoryDraft.trajectory_has_violation) };
@@ -385,7 +481,11 @@
       else {
         state.labels = labels.map((label) => {
           const previous = previousByStep.get(Number(label.step_index));
-          return { ...label, author_name: changed(label, previous, labelFields) ? state.authorName : (previous?.author_name || "") };
+          const didChange = changed(label, previous, labelFields);
+          return { ...label, human_confirmed: didChange ? label.review_status === "confirmed" : previous?.human_confirmed === true,
+            user_authorized_auto_adjudication: previous?.user_authorized_auto_adjudication === true,
+            adjudication_final: label.review_status === "confirmed", delegation_rule_id: previous?.delegation_rule_id || null,
+            author_name: didChange ? state.authorName : (previous?.author_name || "") };
         });
         state.trajectoryLabel = { ...trajectory, author_name: trajectoryChanged ? state.authorName : (state.trajectoryLabel?.author_name || "") };
         renderTask(); toast("초안을 공유 저장했습니다.");
@@ -399,7 +499,7 @@
     button.disabled = true;
     button.textContent = "라벨 sidecar 구성 중…";
     try {
-      const samples = []; const pendingReviews = new Map(); const trajectory_reviews = []; const label_revision_history = []; const trajectory_revision_history = []; const quarantined_trajectories = []; const excluded_reviews = []; const revisions = new Set();
+      const samples = []; const pendingReviews = new Map(); const trajectory_reviews = []; const label_revision_history = []; const trajectory_revision_history = []; const automatic_review_history = []; const automatic_review_decisions = {}; const quarantined_trajectories = []; const excluded_reviews = []; const revisions = new Set();
       let cursor = ""; let snapshotAt = ""; let hasMore = true;
       while (hasMore) {
         const query = new URLSearchParams();
@@ -410,6 +510,8 @@
         (page.pending_reviews || []).forEach((row) => pendingReviews.set(`${row.unit_id}:${row.step_index}`, row));
         label_revision_history.push(...(page.label_revision_history || []));
         trajectory_revision_history.push(...(page.trajectory_revision_history || []));
+        automatic_review_history.push(...(page.automatic_review_history || []));
+        Object.assign(automatic_review_decisions, page.automatic_review_decisions || {});
         quarantined_trajectories.push(...(page.quarantined_trajectories || []));
         excluded_reviews.push(...(page.excluded_reviews || []));
         (page.source_revisions || []).forEach((revision) => revisions.add(revision));
@@ -417,8 +519,8 @@
         hasMore = Boolean(page.has_more); cursor = page.next_cursor || cursor;
       }
       if (!samples.length && !quarantined_trajectories.length && !excluded_reviews.length) { toast("내보낼 최종 검수 기록이 아직 없습니다."); return; }
-      const confirmed = samples.filter((row) => row.review_status === "REVIEWED");
-      samples.filter((row) => row.review_status !== "REVIEWED").forEach((row) => {
+      const confirmed = samples.filter((row) => ["REVIEWED", "REVIEWED_UNDER_USER_DELEGATION"].includes(row.review_status));
+      samples.filter((row) => !["REVIEWED", "REVIEWED_UNDER_USER_DELEGATION"].includes(row.review_status)).forEach((row) => {
         const key = `${row.unit_id}:${row.step_index}`;
         if (!pendingReviews.has(key)) pendingReviews.set(key, { ...row, review_status: row.review_status || "ON_HOLD_AMBIGUOUS_REVIEW", adjudication_final: false });
       });
@@ -440,7 +542,7 @@
         data_revision: revisions.size === 1 ? [...revisions][0] : null,
         source_revisions: [...revisions],
         code_revision: "november-team-review-dashboard",
-        human_confirmed: pending.length === 0 && confirmed.length > 0 && confirmed.length === samples.length,
+        human_confirmed: pending.length === 0 && confirmed.length > 0 && confirmed.length === samples.length && confirmed.every((row) => row.human_confirmed === true),
         exported_at: new Date().toISOString(),
         overlay_note: "Supplemental human-review sidecar. Raw Hugging Face rollout and Parquet files were not modified. Reviewer values are team display names and may be public when uploaded to Hugging Face.",
         reviewer_names_are_public: true,
@@ -457,18 +559,20 @@
           public_contract: "공개 도구/API 계약에 근거한 판정 기록.",
           human_confirmed: "팀 검수자가 해당 행동 라벨을 직접 확정했는지.",
           reviewer: "라벨을 작성한 팀원의 공개용 표시명. 이메일은 포함하지 않는다.",
-          user_authorized_auto_adjudication: "사용자 위임 기준에 따른 자동 확정인지. 이 11월 sidecar에서는 모두 false다.",
+          user_authorized_auto_adjudication: "사용자가 위임한 AV-LABEL-012 기준에 따른 자동 확정인지. 자동 라벨을 사람이 승인한 뒤에도 원래 위임 판정 provenance를 보존한다.",
           adjudication_final: "라벨이 최종 확정됐는지. 보류 항목은 false다.",
         },
         samples,
         confirmed_action_count: confirmed.length,
         human_confirmed_action_count: confirmed.filter((row) => row.human_confirmed).length,
-        delegated_confirmed_action_count: 0,
+        delegated_confirmed_action_count: confirmed.filter((row) => row.review_status === "REVIEWED_UNDER_USER_DELEGATION").length,
         pending_reviews: pending,
         trajectory_violation_evidence,
         trajectory_reviews,
         label_revision_history,
         trajectory_revision_history,
+        automatic_review_decisions,
+        automatic_review_history,
         quarantined_trajectories,
         excluded_reviews,
         review_progress: {
@@ -477,7 +581,7 @@
           held_action_count: pending.length,
           total_pending: pending.length,
           human_confirmed_action_count: confirmed.filter((row) => row.human_confirmed).length,
-          delegated_confirmed_action_count: 0,
+          delegated_confirmed_action_count: confirmed.filter((row) => row.review_status === "REVIEWED_UNDER_USER_DELEGATION").length,
           confirmed_label_counts,
         },
       };
@@ -570,6 +674,27 @@
   $("refresh").onclick = () => (state.hfReadOnly ? startHFQueue() : loadDashboard().catch((e) => toast(e.message)));
   $("download-sidecar").onclick = downloadSidecar;
   $("publish-sidecar").onclick = publishSidecar;
+  $("tab-human-review").onclick = () => {
+    $("human-review-view").classList.remove("hidden"); $("auto-review-view").classList.add("hidden");
+    $("tab-human-review").classList.add("active"); $("tab-auto-review").classList.remove("active");
+  };
+  $("tab-auto-review").onclick = async () => {
+    $("human-review-view").classList.add("hidden"); $("auto-review-view").classList.remove("hidden");
+    $("tab-human-review").classList.remove("active"); $("tab-auto-review").classList.add("active");
+    try { await loadAutoReview(); } catch (error) { $("auto-review-list").innerHTML = `<div class="empty-state">자동 검수 sidecar를 불러오지 못했습니다: ${escapeHtml(error.message)}</div>`; }
+  };
+  $("auto-review-refresh").onclick = () => loadAutoReview().catch((error) => toast(error.message));
+  $("auto-review-filter").onchange = (event) => { state.autoReviewStatus = event.target.value; state.autoReviewPage = 1; loadAutoReview().catch((error) => toast(error.message)); };
+  $("auto-review-search").oninput = (event) => {
+    state.autoReviewQuery = event.target.value; state.autoReviewPage = 1;
+    clearTimeout(state.autoSearchTimer); state.autoSearchTimer = setTimeout(() => loadAutoReview().catch((error) => toast(error.message)), 250);
+  };
+  $("auto-review-prev").onclick = () => { if (state.autoReviewPage > 1) { state.autoReviewPage -= 1; loadAutoReview().catch((error) => toast(error.message)); } };
+  $("auto-review-next").onclick = () => { if (state.autoReviewPage < state.autoReviewPageCount) { state.autoReviewPage += 1; loadAutoReview().catch((error) => toast(error.message)); } };
+  $("auto-review-list").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-auto-action]");
+    if (button) void submitAutoReview(button);
+  });
   $("filter-scenario").oninput = (e) => { state.filter = e.target.value; renderQueue(); };
   $("filter-status").onchange = (e) => { state.status = e.target.value; renderQueue(); };
   $("queue-list").addEventListener("click", async (event) => {

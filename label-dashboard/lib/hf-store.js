@@ -1,8 +1,11 @@
 const REPO = process.env.HF_DATASET_REPO || "hakuuung/gpt-oss-20b-hidden-state-raw-data";
 const STATE_PATH = process.env.HF_STATE_PATH || "label_review/ArgusV_november_review_progress.json";
+const AUTO_REVIEW_PATH = process.env.HF_AUTO_REVIEW_PATH || "label_review/ArgusV_november_auto_review.json.gz";
 const QUEUE_PATH = process.env.HF_QUEUE_PATH || "label_review/ArgusV_november_queue.json";
 const SHARD_PREFIX = process.env.HF_QUEUE_SHARD_PREFIX || "label_review/queue/ArgusV_november_queue";
 const BASE = "https://huggingface.co";
+const { gunzipSync } = require("node:zlib");
+let automaticReviewPromise = null;
 
 function token() {
   const value = process.env.HF_TOKEN;
@@ -22,7 +25,9 @@ async function readJson(path, fallback) {
   });
   if (response.status === 404) return fallback;
   if (!response.ok) throw Object.assign(new Error(`HF_READ_${path}_${response.status}`), { status: 502 });
-  return response.json();
+  if (!path.endsWith(".gz")) return response.json();
+  const bytes = Buffer.from(await response.arrayBuffer());
+  return JSON.parse(gunzipSync(bytes).toString("utf8"));
 }
 
 async function readQueue() {
@@ -59,15 +64,98 @@ function emptyState() {
       tool_call_error: "도구 호출 형식·선택·인자 오류: 0/1/null.",
       error_type: "tool_call_error=1일 때 구체적 오류 유형.",
       reviewer: "라벨 작성자의 공개 표시명.",
-      user_authorized_auto_adjudication: "사용자 위임 기준에 따른 판정 여부. 11월 작업은 모두 false.",
-      adjudication_final: "사람이 확정했는지. 보류는 false.",
+      user_authorized_auto_adjudication: "10월 AV-LABEL-012와 11월 기준 문서에 따른 근거 확인 자동 판정 여부.",
+      adjudication_final: "사람 또는 명시 위임 기준에 따라 최종 확정됐는지. 보류는 false.",
     },
     samples: [], trajectory_reviews: [], label_revision_history: [], trajectory_revision_history: [],
+    automatic_review_decisions: {}, automatic_review_history: [],
     quarantined_trajectories: [], excluded_reviews: [], task_state: {},
   };
 }
 
-async function readState() { return readJson(STATE_PATH, emptyState()); }
+function mergeAutoReview(reviewState, automatic) {
+  if (!automatic || typeof automatic !== "object") return reviewState;
+  reviewState.task_state ||= {};
+  reviewState.samples ||= [];
+  const suppressedUnitIds = new Set();
+  const manualStepIds = new Set();
+  for (const [unitId, autoTask] of Object.entries(automatic.task_state || {})) {
+    const current = reviewState.task_state[unitId];
+    if (current?.review_disposition && current.review_disposition !== "normal") { suppressedUnitIds.add(unitId); continue; }
+    const activeLease = current?.status === "in_progress" && Date.parse(current.lease_expires_at || "") > Date.now();
+    const labelsByStep = new Map((current?.labels || []).map((label) => [Number(label.step_index), label]));
+    const autoLabelsByStep = new Map((autoTask.labels || []).map((label) => [Number(label.step_index), label]));
+    for (const label of current?.labels || []) {
+      const automaticLabel = autoLabelsByStep.get(Number(label.step_index));
+      if (!automaticLabel || JSON.stringify(label) !== JSON.stringify(automaticLabel)) manualStepIds.add(`${unitId}:${Number(label.step_index)}`);
+    }
+    if (current?.status === "completed") continue;
+    for (const label of autoTask.labels || []) if (!labelsByStep.has(Number(label.step_index))) labelsByStep.set(Number(label.step_index), label);
+    reviewState.task_state[unitId] = {
+      ...(autoTask || {}), ...(current || {}),
+      labels: [...labelsByStep.values()].sort((a, b) => Number(a.step_index) - Number(b.step_index)),
+      status: activeLease ? "in_progress" : current?.status && current.status !== "queued" ? current.status : autoTask.status,
+      lease_token: activeLease ? current.lease_token : null,
+      lease_expires_at: activeLease ? current.lease_expires_at : null,
+      owner_client_id: activeLease ? current.owner_client_id : null,
+      owner_tab_id: activeLease ? current.owner_tab_id : null,
+      review_disposition: current?.review_disposition || autoTask.review_disposition || "normal",
+    };
+  }
+  const existingSamples = new Set(reviewState.samples.map((sample) => `${sample.unit_id}:${sample.step_index}`));
+  for (const sample of automatic.samples || []) {
+    const key = `${sample.unit_id}:${sample.step_index}`;
+    if (!existingSamples.has(key) && !suppressedUnitIds.has(sample.unit_id) && !manualStepIds.has(key)) {
+      reviewState.samples.push(sample); existingSamples.add(key);
+    }
+  }
+  reviewState.pending_reviews = Object.entries(reviewState.task_state).flatMap(([unit_id, task]) => (task.labels || [])
+    .filter((label) => label.review_status === "draft" || label.review_status === "hold")
+    .map((label) => ({ unit_id, action_id: label.action_id, step_index: label.step_index, ...label,
+      review_status: label.review_status === "hold" ? "ON_HOLD_AMBIGUOUS_REVIEW" : "PENDING_HUMAN_REVIEW", adjudication_final: false })));
+  reviewState.automatic_review = automatic.metadata || { sidecar_path: AUTO_REVIEW_PATH };
+  return reviewState;
+}
+
+async function readState() {
+  const [reviewState, automatic] = await Promise.all([
+    readJson(STATE_PATH, emptyState()),
+    automaticReviewPromise ||= readJson(AUTO_REVIEW_PATH, null).catch((error) => { automaticReviewPromise = null; throw error; }),
+  ]);
+  return mergeAutoReview(reviewState, automatic);
+}
+
+async function readAutomaticReview() {
+  return automaticReviewPromise ||= readJson(AUTO_REVIEW_PATH, null).catch((error) => { automaticReviewPromise = null; throw error; });
+}
+
+function projectManualStateForCommit(state, originalManualState, baselineTaskFingerprints, automatic) {
+  // Keep immutable automated labels in AUTO_REVIEW_PATH. Persist only changed human
+  // samples and task/lease overrides so heartbeats do not copy the large overlay.
+  const autoSampleByKey = new Map((automatic?.samples || []).map((sample) => [`${sample.unit_id}:${sample.step_index}`, sample]));
+  state.samples = (state.samples || []).filter((sample) => {
+    const automaticSample = autoSampleByKey.get(`${sample.unit_id}:${sample.step_index}`);
+    return !automaticSample || JSON.stringify(sample) !== JSON.stringify(automaticSample);
+  });
+
+  const manualUnitIds = new Set(Object.keys(originalManualState.task_state || {}));
+  for (const [unitId, task] of Object.entries(state.task_state || {})) {
+    if (manualUnitIds.has(unitId)) continue;
+    if (JSON.stringify(task) === baselineTaskFingerprints.get(unitId)) {
+      delete state.task_state[unitId];
+      continue;
+    }
+    const automaticLabels = automatic?.task_state?.[unitId]?.labels || [];
+    if (task.status !== "completed" && JSON.stringify(task.labels || []) === JSON.stringify(automaticLabels)) delete task.labels;
+    if (!task.revision_in_progress && JSON.stringify(task.revision_base_labels || []) === JSON.stringify(automaticLabels)) delete task.revision_base_labels;
+  }
+  state.pending_reviews = Object.entries(state.task_state || {}).flatMap(([unit_id, task]) => (task.labels || [])
+    .filter((label) => label.review_status === "draft" || label.review_status === "hold")
+    .map((label) => ({ unit_id, action_id: label.action_id, step_index: label.step_index, ...label,
+      review_status: label.review_status === "hold" ? "ON_HOLD_AMBIGUOUS_REVIEW" : "PENDING_HUMAN_REVIEW", adjudication_final: false })));
+  delete state.automatic_review;
+  return state;
+}
 
 async function commitState(state, expectedSha) {
   const { commit } = await import("@huggingface/hub");
@@ -83,11 +171,17 @@ async function commitState(state, expectedSha) {
 async function mutateState(mutator, attempts = 5) {
   let lastError;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const [info, state] = await Promise.all([repoInfo(), readState()]);
+    const [info, originalManualState, automatic] = await Promise.all([
+      repoInfo(), readJson(STATE_PATH, emptyState()),
+      automaticReviewPromise ||= readJson(AUTO_REVIEW_PATH, null).catch((error) => { automaticReviewPromise = null; throw error; }),
+    ]);
+    const state = mergeAutoReview(structuredClone(originalManualState), automatic);
+    const baselineTaskFingerprints = new Map(Object.entries(state.task_state || {}).map(([unitId, task]) => [unitId, JSON.stringify(task)]));
     const result = await mutator(state);
     if (result?.noCommit) return result.value;
     try {
-      const commitResult = await commitState(state, info.sha);
+      const manualState = projectManualStateForCommit(state, originalManualState, baselineTaskFingerprints, automatic);
+      const commitResult = await commitState(manualState, info.sha);
       return { ...result?.value, commit_url: commitResult?.commitUrl || null };
     } catch (error) {
       lastError = error;
@@ -97,4 +191,4 @@ async function mutateState(mutator, attempts = 5) {
   throw Object.assign(new Error(`HF_CONCURRENT_UPDATE_RETRY_EXHAUSTED: ${lastError?.message || ""}`), { status: 409 });
 }
 
-module.exports = { REPO, STATE_PATH, QUEUE_PATH, SHARD_PREFIX, readQueue, readTask, readState, mutateState };
+module.exports = { REPO, STATE_PATH, AUTO_REVIEW_PATH, QUEUE_PATH, SHARD_PREFIX, readQueue, readTask, readState, readAutomaticReview, mutateState };

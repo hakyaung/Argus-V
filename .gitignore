@@ -31,6 +31,8 @@ Research/*.sqlite3-shm
 # Local-only HF queue preview for the labeling dashboard
 label-dashboard/public/preview_queue.json
 label-dashboard/november_queue.jsonl
+label-dashboard/november_auto_review.json
+label-dashboard/november_auto_review.json.gz
 label-dashboard/node_modules/
 label-dashboard/.npm-cache/
 
